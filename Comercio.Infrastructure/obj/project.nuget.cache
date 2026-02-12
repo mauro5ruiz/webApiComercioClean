@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8/+zVZh1bBQ=",
+  "dgSpecHash": "hZGwualCnCw=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mauro\\source\\repos\\Comercio.Infrastructure\\Comercio.Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\mauro\\source\\repos\\WebApiComercioClean\\Comercio.Infrastructure\\Comercio.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mauro\\.nuget\\packages\\azure.core\\1.50.0\\azure.core.1.50.0.nupkg.sha512",
     "C:\\Users\\mauro\\.nuget\\packages\\azure.identity\\1.17.1\\azure.identity.1.17.1.nupkg.sha512",
