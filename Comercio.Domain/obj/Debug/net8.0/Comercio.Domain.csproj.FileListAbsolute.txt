@@ -1,0 +1,11 @@
+C:\Users\mauro\source\repos\Comercio.Domain\bin\Debug\net8.0\Comercio.Domain.deps.json
+C:\Users\mauro\source\repos\Comercio.Domain\bin\Debug\net8.0\Comercio.Domain.dll
+C:\Users\mauro\source\repos\Comercio.Domain\bin\Debug\net8.0\Comercio.Domain.pdb
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.AssemblyInfoInputs.cache
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.AssemblyInfo.cs
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.csproj.CoreCompileInputs.cache
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.dll
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\refint\Comercio.Domain.dll
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\Comercio.Domain.pdb
+C:\Users\mauro\source\repos\Comercio.Domain\obj\Debug\net8.0\ref\Comercio.Domain.dll
