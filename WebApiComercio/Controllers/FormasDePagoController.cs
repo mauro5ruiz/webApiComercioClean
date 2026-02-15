@@ -19,7 +19,7 @@ namespace Comercio.Api.Controllers
 
         // GET: api/formas-de-pago
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoriaDto>>> Obtener()
+        public async Task<ActionResult<IEnumerable<FormaDePagoDto>>> Obtener()
         {
             var categorias = await _formasDePagoServicio.ObtenerTodas();
             return Ok(categorias);
@@ -27,7 +27,7 @@ namespace Comercio.Api.Controllers
 
         // GET: api/formas-de-pago/{id}
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<CategoriaDto>> ObtenerPorId([FromRoute] int id)
+        public async Task<ActionResult<FormaDePagoDto>> ObtenerPorId([FromRoute] int id)
         {
             var fdp = await _formasDePagoServicio.ObtenerPorId(id);
             if (fdp is null) return NotFound();

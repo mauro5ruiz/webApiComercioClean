@@ -1,4 +1,6 @@
+using AutoMapper;
 using Comercio.Application.Interfaces;
+using Comercio.Application.Mapping;
 using Comercio.Application.Servicios;
 using Comercio.Domain.Interfaces;
 using Comercio.Infrastructure.Repositorios;
@@ -16,12 +18,14 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // ===== Servicios (Application) =====
 builder.Services.AddScoped<ICategoriasServicio, CategoriasServicio>();
 builder.Services.AddScoped<IMarcasServicio, MarcasServicio>();
 builder.Services.AddScoped<IFormasDePagoServicio, FormasDePagoServicio>();
 builder.Services.AddScoped<ISucursalesServicio, SucursalesServicio>();
+builder.Services.AddScoped<IProveedoresServicio, ProveedoresServicio>();
 
 // ===== Servicios (Infra) =====
 builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÑADIR
@@ -31,6 +35,7 @@ builder.Services.AddScoped<ICategoriasRepository>(_ => new CategoriasRepositorio
 builder.Services.AddScoped<IMarcasRepository>(_ => new MarcasRepositorio(connectionString));
 builder.Services.AddScoped<IFormasDePagoRepository>(_ => new FormasDePagoRepositorio(connectionString));
 builder.Services.AddScoped<ISucursalesRepository>(_ => new SucursalesRepositorio(connectionString));
+builder.Services.AddScoped<IProveedoresRepostory>(_ => new ProveedoresRepositorio(connectionString));
 
 var app = builder.Build();
 
