@@ -2,7 +2,7 @@
 
 namespace Comercio.Domain.Interfaces
 {
-    public interface IProveedoresRepostory
+    public interface IProveedoresRepository
     {
         Task<IEnumerable<Proveedor>> ObtenerTodos(bool incluirEliminados = false);
         Task<Proveedor?> ObtenerPorId(int id);

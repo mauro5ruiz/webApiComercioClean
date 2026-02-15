@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Comercio.Infrastructure.Repositorios
 {
-    public class ProveedoresRepositorio : IProveedoresRepostory
+    public class ProveedoresRepositorio : IProveedoresRepository
     {
         private readonly string _connectionString;
 

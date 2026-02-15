@@ -8,11 +8,11 @@ namespace Comercio.Application.Servicios
 {
     public class ProveedoresServicio : IProveedoresServicio
     {
-        private readonly IProveedoresRepostory _repository;
+        private readonly IProveedoresRepository _repository;
         private readonly IMapper _mapper;
         private readonly IArchivosServicio _archivoServicio;
 
-        public ProveedoresServicio(IProveedoresRepostory repository, IMapper mapper, IArchivosServicio archivoService)
+        public ProveedoresServicio(IProveedoresRepository repository, IMapper mapper, IArchivosServicio archivoService)
         {
             _repository = repository;
             _mapper = mapper;
@@ -109,10 +109,19 @@ namespace Comercio.Application.Servicios
 
         public async Task<bool> EliminarPermanentemente(int id)
         {
-            if (id <= 0)
-                throw new ArgumentException("Id erróneo.");
+            try
+            {
+                if (id <= 0)
+                    throw new ArgumentException("Id erróneo.");
 
-            return await _repository.DarDeBaja(id);
+                await _repository.EliminarPermanentemente(id);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         private string NormalizarCuit(string cuit)
