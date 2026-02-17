@@ -102,5 +102,39 @@ namespace Comercio.Api.Controllers
 
             return NoContent();
         }
+
+        [HttpPatch("{id:int}/precio")]
+        public async Task<IActionResult> ActualizarPrecioIndividual([FromRoute] int id, [FromBody] ActualizacionPrecioIndividualDto dto)
+        {
+            try
+            {
+                var actualizado = await _productosServicio.ActualizarPrecioIndividual(id, dto);
+
+                if (!actualizado)
+                    return NotFound();
+
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPatch("precios")]
+        public async Task<ActionResult<int>> ActualizarPrecios([FromBody] ActualizacionPrecioMasivamenteDto dto)
+        {
+            try
+            {
+                var cantidadAfectados = await _productosServicio.ActualizarPrecios(dto);
+
+                return Ok(new { registrosAfectados = cantidadAfectados });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
     }
 }

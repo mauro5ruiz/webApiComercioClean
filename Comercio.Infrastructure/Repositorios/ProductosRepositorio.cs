@@ -164,49 +164,51 @@ namespace Comercio.Infrastructure.Repositorios
             return filas > 0;
         }
 
-        public async Task<bool> ActualizarPrecio(int idProducto, decimal nuevoPrecio)
+        public async Task<int> ActualizarPrecios(decimal valor, string tipoOperacion, int? idCategoria = null, int? idMarca = null, bool soloActivos = true)
         {
-            throw new NotImplementedException();
+            using var connection = new SqlConnection(_connectionString);
+
+            var where = "WHERE 1=1";
+
+            if (soloActivos)
+                where += " AND Activo = 1";
+
+            if (idCategoria.HasValue && idCategoria > 0)
+                where += " AND IdCategoria = @IdCategoria";
+
+            if (idMarca.HasValue && idMarca > 0)
+                where += " AND IdMarca = @IdMarca";
+
+            string setClause = tipoOperacion switch
+            {
+                "fijo" => "PrecioVenta = @Valor",
+                "margen" => "PrecioVenta = PrecioCompra + (PrecioCompra * @Valor / 100)",
+                "aumento" => "PrecioVenta = PrecioVenta + (PrecioVenta * @Valor / 100)",
+                _ => throw new ArgumentException("Operación inválida")
+            };
+
+            var sql = $@"UPDATE Productos SET {setClause} {where}";
+
+            return await connection.ExecuteAsync(sql, new{ Valor = valor, IdCategoria = idCategoria, IdMarca = idMarca });
         }
 
-        public async Task<bool> ActualizarPrecioPorMargen(int idProducto, decimal porcentajeMargen)
+        public async Task<bool> ActualizarPrecioIndividual(int idProducto, decimal valor, string tipoOperacion)
         {
-            throw new NotImplementedException();
-        }
+            using var connection = new SqlConnection(_connectionString);
 
-        public async Task<bool> AumentarPrecio(int idProducto, decimal porcentaje)
-        {
-            throw new NotImplementedException();
-        }
+            string setClause = tipoOperacion switch
+            {
+                "fijo" => "PrecioVenta = @Valor",
+                "margen" => "PrecioVenta = PrecioCompra + (PrecioCompra * @Valor / 100)",
+                "aumento" => "PrecioVenta = PrecioVenta + (PrecioVenta * @Valor / 100)",
+                _ => throw new ArgumentException("Operación inválida")
+            };
 
-        public async Task<int> ActualizarPrecioTodosPorMargen(decimal porcentajeMargen)
-        {
-            throw new NotImplementedException();
-        }
+            var sql = $@"UPDATE Productos SET {setClause} WHERE Id = @Id";
 
-        public async Task<int> AumentarPrecioTodos(decimal porcentaje)
-        {
-            throw new NotImplementedException();
-        }
+            var filas = await connection.ExecuteAsync(sql, new{ Id = idProducto, Valor = valor });
 
-        public async Task<int> ActualizarPrecioPorCategoria(int idCategoria, decimal porcentajeMargen)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<int> AumentarPrecioPorCategoria(int idCategoria, decimal porcentaje)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<int> AumentarPrecioPorMarca(int idMarca, decimal porcentaje)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<int> ActualizarPrecioPorMarca(int idMarca, decimal porcentajeMargen)
-        {
-            throw new NotImplementedException();
+            return filas > 0;
         }
     }
 }

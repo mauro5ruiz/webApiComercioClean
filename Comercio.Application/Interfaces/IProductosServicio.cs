@@ -15,5 +15,8 @@ namespace Comercio.Application.Interfaces
         Task<bool> Restaurar(int id);
 
         Task<bool> EliminarPermanentemente(int id);
+        Task<bool> ActualizarPrecioIndividual(int idProducto, ActualizacionPrecioIndividualDto dto);
+        Task<int> ActualizarPrecios(ActualizacionPrecioMasivamenteDto dto);
+
     }
 }
