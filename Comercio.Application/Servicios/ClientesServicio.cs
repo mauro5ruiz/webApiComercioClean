@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Comercio.Application.Dtos.Clientes;
+﻿using Comercio.Application.Dtos.Clientes;
 using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Interfaces;
@@ -9,13 +8,11 @@ namespace Comercio.Application.Servicios
     public class ClientesServicio : IClientesServicio
     {
         private readonly IClientesRepository _repository;
-        private readonly IMapper _mapper;
         private readonly IArchivosServicio _archivoServicio;
 
-        public ClientesServicio(IClientesRepository repository, IMapper mapper, IArchivosServicio archivoService)
+        public ClientesServicio(IClientesRepository repository, IArchivosServicio archivoService)
         {
             _repository = repository;
-            _mapper = mapper;
             _archivoServicio = archivoService;
         }
 
@@ -78,10 +75,18 @@ namespace Comercio.Application.Servicios
 
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "clientes");
 
-            var cliente = _mapper.Map<Cliente>(dto);
-            cliente.Activo = true;
-            cliente.FechaAlta = DateTime.UtcNow;
-            cliente.UrlImagen = rutaImagen;
+            var cliente = new Cliente
+            {
+                TipoCliente = dto.TipoCliente,
+                Nombre = dto.Nombre?.Trim(),
+                Apellido = dto.Apellido?.Trim(),
+                RazonSocial = dto.RazonSocial?.Trim(),
+                NroDocumento = dto.NroDocumento,
+                Cuit = dto.Cuit,
+                Activo = true,
+                FechaAlta = DateTime.UtcNow,
+                UrlImagen = rutaImagen
+            };
 
             return await _repository.Crear(cliente);
         }
@@ -145,11 +150,19 @@ namespace Comercio.Application.Servicios
             if (dto.Imagen is not null && dto.Imagen.Length > 0)
                 rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "clientes", existente.UrlImagen);
 
-            var cliente = _mapper.Map<Cliente>(dto);
-            cliente.Id = id;
-            cliente.UrlImagen = rutaImagen;
-            cliente.Activo = existente.Activo;
-            cliente.FechaAlta = existente.FechaAlta;
+            var cliente = new Cliente
+            {
+                Id = id,
+                TipoCliente = dto.TipoCliente,
+                Nombre = dto.Nombre?.Trim(),
+                Apellido = dto.Apellido?.Trim(),
+                RazonSocial = dto.RazonSocial?.Trim(),
+                NroDocumento = dto.NroDocumento,
+                Cuit = dto.Cuit,
+                UrlImagen = rutaImagen,
+                Activo = existente.Activo,
+                FechaAlta = existente.FechaAlta
+            };
 
             await _repository.Actualizar(cliente);
         }
