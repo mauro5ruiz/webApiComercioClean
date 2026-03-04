@@ -31,6 +31,7 @@ builder.Services.AddScoped<IProductosServicio, ProductosServicio>();
 builder.Services.AddScoped<IUsuariosServicio, UsuariosServicio>();
 builder.Services.AddScoped<IVendedoresServicio, VendedoresServicio>();
 builder.Services.AddScoped<IOfertasServicio, OfertasServicio>();
+builder.Services.AddScoped<IVentasServicio, VentasServicio>();
 
 // ===== Servicios (Infra) =====
 builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÑADIR
@@ -46,6 +47,9 @@ builder.Services.AddScoped<IProductosRepository>(_ => new ProductosRepositorio(c
 builder.Services.AddScoped<IUsuariosRepository>(_ => new UsuariosRepositorio(connectionString));
 builder.Services.AddScoped<IVendedoresRepository>(_ => new VendedoresRepositorio(connectionString));
 builder.Services.AddScoped<IOfertasRepository>(_ => new OfertasRepositorio(connectionString));
+builder.Services.AddScoped<IVentasRepository>(_ => new VentasRepositorio(connectionString));
+builder.Services.AddScoped<IDetalleVentasRepostory>(_ => new DetalleVentasRepositorio(connectionString));
+builder.Services.AddScoped<IVentasPagosRepository>(_ => new VentasPagosRepositorio(connectionString));
 
 var app = builder.Build();
 

@@ -210,5 +210,27 @@ namespace Comercio.Infrastructure.Repositorios
 
             return filas > 0;
         }
+
+        public async Task DescontarStock(int idProducto, decimal cantidad)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Productos
+                SET StockActual = StockActual - @Cantidad
+                WHERE Id = @IdProducto";
+
+            await connection.ExecuteAsync(sql, new { IdProducto = idProducto, Cantidad = cantidad });
+        }
+
+        public async Task AumentarStock(int idProducto, decimal cantidad)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Productos
+                SET StockActual = StockActual + @Cantidad
+                WHERE Id = @IdProducto";
+
+            await connection.ExecuteAsync(sql, new { IdProducto = idProducto, Cantidad = cantidad });
+        }
     }
 }
