@@ -37,8 +37,8 @@ namespace Comercio.Application.Dtos.Productos
         [Range(0, int.MaxValue, ErrorMessage = "El stock mínimo no puede ser negativo.")]
         public int StockMinimo { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "El stock actual no puede ser negativo.")]
-        public int StockActual { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "El stock inicial no puede ser negativo.")]
+        public int StockInicial { get; set; }
 
         public IFormFile? Imagen { get; set; }
     }

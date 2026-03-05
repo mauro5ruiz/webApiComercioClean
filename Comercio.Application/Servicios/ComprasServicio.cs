@@ -11,17 +11,16 @@ namespace Comercio.Application.Servicios
         private readonly IDetalleComprasRepository _detalleRepository;
         private readonly IComprasPagosRepository _pagosRepository;
         private readonly IProductosRepository _productosRepository;
+        private readonly IMovimientosStockRepository _movimientosStockRepository;
 
-        public ComprasServicio(
-            IComprasRepostory comprasRepository,
-            IDetalleComprasRepository detalleRepository,
-            IComprasPagosRepository pagosRepository,
-            IProductosRepository productosRepository)
+        public ComprasServicio(IComprasRepostory comprasRepository,IDetalleComprasRepository detalleRepository,IComprasPagosRepository pagosRepository,
+            IProductosRepository productosRepository,IMovimientosStockRepository movimientosStockRepository)
         {
             _comprasRepository = comprasRepository;
             _detalleRepository = detalleRepository;
             _pagosRepository = pagosRepository;
             _productosRepository = productosRepository;
+            _movimientosStockRepository = movimientosStockRepository;
         }
 
         public async Task<IEnumerable<Compra>> ObtenerEntreFechas(DateTime desde, DateTime hasta)
@@ -79,7 +78,16 @@ namespace Comercio.Application.Servicios
                 detalle.Subtotal = detalle.Cantidad * detalle.PrecioUnitario;
 
                 await _detalleRepository.Insertar(detalle);
-                await _productosRepository.AumentarStock(detalle.IdProducto, detalle.Cantidad);
+                var movimiento = new MovimientoStock
+                {
+                    IdProducto = detalle.IdProducto,
+                    Cantidad = detalle.Cantidad,
+                    IdTipoMovimientoStock = TipoMovimientoStock.Compra,
+                    Fecha = DateTime.UtcNow,
+                    IdReferencia = idCompra,
+                    Observaciones = "Compra registrada"
+                };
+                await _movimientosStockRepository.RegistrarMovimiento(movimiento);
             }
 
             // Inserto los pagos (si existen)
@@ -116,8 +124,20 @@ namespace Comercio.Application.Servicios
             var pagos = await _pagosRepository.ObtenerPorCompra(idCompra);
 
             foreach (var detalle in detalles)
-                await _productosRepository.DescontarStock(detalle.IdProducto, detalle.Cantidad);
-            
+            {
+                var movimientoReverso = new MovimientoStock
+                {
+                    IdProducto = detalle.IdProducto,
+                    Cantidad = -detalle.Cantidad,
+                    IdTipoMovimientoStock = TipoMovimientoStock.AnulacionCompra,
+                    Fecha = DateTime.UtcNow,
+                    IdReferencia = idCompra,
+                    Observaciones = "Anulación de compra"
+                };
+
+                await _movimientosStockRepository.RegistrarMovimiento(movimientoReverso);
+            }
+
             // Anulo los pagos
             foreach (var pago in pagos)
                 await _pagosRepository.CambiarEstado(pago.Id, 2);

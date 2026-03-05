@@ -2,6 +2,7 @@
 using Comercio.Application.Dtos.Productos;
 using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
+using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
 
 namespace Comercio.Application.Servicios
@@ -13,15 +14,17 @@ namespace Comercio.Application.Servicios
         private readonly ICategoriasRepository _categoriasRepository;
         private readonly IMapper _mapper;
         private readonly IArchivosServicio _archivoServicio;
+        private readonly IMovimientosStockRepository _movimientosStockRepository;
 
         public ProductosServicio(IProductosRepository productosRepository, IMapper mapper, IArchivosServicio archivoService, 
-            IMarcasRepository marcasRepository, ICategoriasRepository categoriasRepository)
+            IMarcasRepository marcasRepository, ICategoriasRepository categoriasRepository, IMovimientosStockRepository movimientosStockRepository)
         {
             _productosRepository = productosRepository;
             _mapper = mapper;
             _archivoServicio = archivoService;
             _marcasRepository = marcasRepository;
             _categoriasRepository = categoriasRepository;
+            _movimientosStockRepository = movimientosStockRepository;
         }
 
         public async Task<IEnumerable<Producto>> ObtenerTodos(bool incluirEliminados = false)
@@ -45,7 +48,7 @@ namespace Comercio.Application.Servicios
             if (string.IsNullOrWhiteSpace(dto.Nombre))
                 throw new ArgumentException("El nombre es obligatorio.");
 
-            if (dto.StockActual < 0)
+            if (dto.StockInicial < 0)
                 throw new ArgumentException("El stock no puede ser negativo.");
 
             if (dto.PrecioCompra >= dto.PrecioVenta)
@@ -76,7 +79,24 @@ namespace Comercio.Application.Servicios
             producto.FechaAlta = DateTime.UtcNow;
             producto.UrlImagen = rutaImagen;
 
-            return await _productosRepository.Crear(producto);
+            var idProducto = await _productosRepository.Crear(producto);
+
+            if (dto.StockInicial > 0)
+            {
+                var movimientoInicial = new MovimientoStock
+                {
+                    IdProducto = idProducto,
+                    Cantidad = dto.StockInicial,
+                    IdTipoMovimientoStock = TipoMovimientoStock.CargaInicial,
+                    Fecha = DateTime.UtcNow,
+                    IdReferencia = idProducto,
+                    Observaciones = "Carga inicial de stock"
+                };
+
+                await _movimientosStockRepository.RegistrarMovimiento(movimientoInicial);
+            }
+
+            return idProducto;
         }
 
         public async Task Actualizar(int id, ActualizarProductoDto dto)
@@ -89,9 +109,6 @@ namespace Comercio.Application.Servicios
 
             if (string.IsNullOrWhiteSpace(dto.Nombre))
                 throw new ArgumentException("El nombre es obligatorio.");
-
-            if (dto.StockActual < 0)
-                throw new ArgumentException("El stock no puede ser negativo.");
 
             var existente = await _productosRepository.ObtenerPorId(id);
 

@@ -54,6 +54,7 @@ builder.Services.AddScoped<IVentasPagosRepository>(_ => new VentasPagosRepositor
 builder.Services.AddScoped<IComprasRepostory>(_ => new ComprasRepositorio(connectionString));
 builder.Services.AddScoped<IDetalleComprasRepository>(_ => new DetalleComprasRepositorio(connectionString));
 builder.Services.AddScoped<IComprasPagosRepository>(_ => new ComprasPagosRepositorio(connectionString));
+builder.Services.AddScoped<IMovimientosStockRepository>(_ => new MovimientosStockRepositorio(connectionString));
 
 var app = builder.Build();
 

@@ -18,15 +18,21 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, Nombre, Descripcion, Codigo, CodigoBarra,
-                               IdCategoria, IdMarca,
-                               PrecioCompra, PrecioVenta,
-                               StockMinimo, ControlStock, StockActual,
-                               UrlImagen, Activo, FechaAlta, FechaBaja
-                        FROM Productos";
+            var sql = @"
+                SELECT 
+                    p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra, p.IdCategoria, p.IdMarca, p.PrecioCompra, p.PrecioVenta,
+                    p.StockMinimo, p.ControlStock, ISNULL(SUM(ms.Cantidad), 0) AS StockActual, p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja
+                FROM Productos p
+                LEFT JOIN MovimientosStock ms ON p.Id = ms.IdProducto";
 
             if (!incluirEliminados)
-                sql += " WHERE Activo = 1";
+                sql += " WHERE p.Activo = 1";
+
+            sql += @"
+                GROUP BY 
+                    p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra, p.IdCategoria, 
+                    p.IdMarca, p.PrecioCompra, p.PrecioVenta, p.StockMinimo, p.ControlStock,
+                    p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja";
 
             return await connection.QueryAsync<Producto>(sql);
         }
@@ -35,10 +41,19 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, Nombre, Descripcion, Codigo, CodigoBarra, IdCategoria, IdMarca, PrecioCompra, PrecioVenta,
-                               StockMinimo, ControlStock, StockActual, UrlImagen, Activo, FechaAlta, FechaBaja
-                        FROM Productos
-                        WHERE Id = @Id";
+            var sql = @"
+                    SELECT 
+                        p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra, p.IdCategoria, p.IdMarca, p.PrecioCompra, p.PrecioVenta,
+                        p.StockMinimo, p.ControlStock, ISNULL(SUM(ms.Cantidad), 0) AS StockActual, p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja
+                    FROM Productos p
+                    LEFT JOIN MovimientosStock ms ON p.Id = ms.IdProducto
+                    WHERE p.Id = @Id
+                    GROUP BY 
+                        p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra,
+                        p.IdCategoria, p.IdMarca,
+                        p.PrecioCompra, p.PrecioVenta,
+                        p.StockMinimo, p.ControlStock,
+                        p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja";
 
             return await connection.QueryFirstOrDefaultAsync<Producto>(sql, new { Id = id });
         }
@@ -87,10 +102,10 @@ namespace Comercio.Infrastructure.Repositorios
 
             var sql = @"INSERT INTO Productos
                         (Nombre, Descripcion, Codigo, CodigoBarra, IdCategoria, IdMarca, PrecioCompra, PrecioVenta,
-                         StockMinimo, ControlStock, StockActual, UrlImagen, Activo, FechaAlta)
+                         StockMinimo, ControlStock, UrlImagen, Activo, FechaAlta)
                         VALUES
                         (@Nombre, @Descripcion, @Codigo, @CodigoBarra, @IdCategoria, @IdMarca, @PrecioCompra, 
-                         @PrecioVenta, @StockMinimo, @ControlStock, @StockActual, @UrlImagen, 1, @FechaAlta);
+                         @PrecioVenta, @StockMinimo, @ControlStock, @UrlImagen, 1, @FechaAlta);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -155,7 +170,6 @@ namespace Comercio.Infrastructure.Repositorios
                             PrecioVenta = @PrecioVenta,
                             StockMinimo = @StockMinimo,
                             ControlStock = @ControlStock,
-                            StockActual = @StockActual,
                             UrlImagen = @UrlImagen
                         WHERE Id = @Id";
 
@@ -209,28 +223,6 @@ namespace Comercio.Infrastructure.Repositorios
             var filas = await connection.ExecuteAsync(sql, new{ Id = idProducto, Valor = valor });
 
             return filas > 0;
-        }
-
-        public async Task DescontarStock(int idProducto, decimal cantidad)
-        {
-            using var connection = new SqlConnection(_connectionString);
-
-            var sql = @"UPDATE Productos
-                SET StockActual = StockActual - @Cantidad
-                WHERE Id = @IdProducto";
-
-            await connection.ExecuteAsync(sql, new { IdProducto = idProducto, Cantidad = cantidad });
-        }
-
-        public async Task AumentarStock(int idProducto, decimal cantidad)
-        {
-            using var connection = new SqlConnection(_connectionString);
-
-            var sql = @"UPDATE Productos
-                SET StockActual = StockActual + @Cantidad
-                WHERE Id = @IdProducto";
-
-            await connection.ExecuteAsync(sql, new { IdProducto = idProducto, Cantidad = cantidad });
         }
     }
 }

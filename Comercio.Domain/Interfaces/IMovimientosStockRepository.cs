@@ -1,0 +1,10 @@
+﻿using Comercio.Domain.Entidades;
+
+namespace Comercio.Domain.Interfaces
+{
+    public interface IMovimientosStockRepository
+    {
+        Task RegistrarMovimiento(MovimientoStock movimiento);
+        Task<int> ObtenerStockActual(int idProducto);
+    }
+}

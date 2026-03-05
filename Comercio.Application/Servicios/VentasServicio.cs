@@ -1,5 +1,6 @@
 ﻿using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
+using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
 
 namespace Comercio.Application.Servicios
@@ -10,14 +11,16 @@ namespace Comercio.Application.Servicios
         private readonly IDetalleVentasRepostory _detalleRepository;
         private readonly IVentasPagosRepository _pagosRepository;
         private readonly IProductosRepository _productosRepository;
+        private readonly IMovimientosStockRepository _movimientosStockRepository;
 
         public VentasServicio(IVentasRepository ventasRepository, IDetalleVentasRepostory detalleRepository, 
-            IVentasPagosRepository pagosRepository, IProductosRepository productosRepository)
+            IVentasPagosRepository pagosRepository, IProductosRepository productosRepository, IMovimientosStockRepository movimientosStockRepository)
         {
             _ventasRepository = ventasRepository;
             _detalleRepository = detalleRepository;
             _pagosRepository = pagosRepository;
             _productosRepository = productosRepository;
+            _movimientosStockRepository = movimientosStockRepository;
         }
 
         public async Task<IEnumerable<Venta>> ObtenerEntreFechas(DateTime desde, DateTime hasta)
@@ -65,11 +68,13 @@ namespace Comercio.Application.Servicios
                     continue;
                 }
 
-                if (producto.StockActual < detalle.Cantidad)
+                var stockActual = await _movimientosStockRepository.ObtenerStockActual(detalle.IdProducto);
+
+                if (stockActual < detalle.Cantidad)
                 {
                     erroresStock.Add(
                         $"Stock insuficiente para {producto.Nombre}. " +
-                        $"Disponible: {producto.StockActual}, " +
+                        $"Disponible: {stockActual}, " +
                         $"Solicitado: {detalle.Cantidad}");
                 }
             }
@@ -98,9 +103,19 @@ namespace Comercio.Application.Servicios
                     throw new InvalidOperationException($"Stock insuficiente para el producto {producto.Nombre}.");
 
                 detalle.IdVenta = idVenta;
-
                 await _detalleRepository.Insertar(detalle);
-                await _productosRepository.DescontarStock(detalle.IdProducto,detalle.Cantidad);
+
+                var movimiento = new MovimientoStock
+                {
+                    IdProducto = detalle.IdProducto,
+                    Cantidad = -detalle.Cantidad,
+                    IdTipoMovimientoStock = TipoMovimientoStock.Venta,
+                    Fecha = DateTime.UtcNow,
+                    IdReferencia = idVenta,
+                    Observaciones = "Venta realizada"
+                };
+
+                await _movimientosStockRepository.RegistrarMovimiento(movimiento);
             }
 
             if (pagos != null && pagos.Any())
@@ -138,7 +153,19 @@ namespace Comercio.Application.Servicios
 
             // Devuelvo el stock
             foreach (var detalle in detalles)
-                await _productosRepository.AumentarStock(detalle.IdProducto, detalle.Cantidad);
+            {
+                var movimientoReverso = new MovimientoStock
+                {
+                    IdProducto = detalle.IdProducto,
+                    Cantidad = detalle.Cantidad, // POSITIVO (devuelve stock)
+                    IdTipoMovimientoStock = TipoMovimientoStock.AnulacionVenta,
+                    Fecha = DateTime.UtcNow,
+                    IdReferencia = idVenta,
+                    Observaciones = "Anulación de venta"
+                };
+
+                await _movimientosStockRepository.RegistrarMovimiento(movimientoReverso);
+            }
 
             // Anular pagos (no los borro)
             foreach (var pago in pagos)
