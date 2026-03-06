@@ -6,5 +6,7 @@ namespace Comercio.Domain.Interfaces
     {
         Task RegistrarMovimiento(MovimientoStock movimiento);
         Task<int> ObtenerStockActual(int idProducto);
+        Task Actualizar(MovimientoStock movimiento);
+        Task Eliminar(int idMovimiento);
     }
 }

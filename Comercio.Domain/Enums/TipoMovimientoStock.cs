@@ -11,6 +11,8 @@ namespace Comercio.Domain.Enums
         DevolucionVenta = 5,
         Perdida = 6,
         AnulacionCompra = 7,
-        AnulacionVenta = 8
+        AnulacionVenta = 8,
+        AnulacionPerdida = 9,
+        AjustePerdida = 10
     }
 }

@@ -14,6 +14,16 @@ namespace Comercio.Infrastructure.Repositorios
             _connectionString = connectionString;
         }
 
+        public async Task<MovimientoStock?> ObtenerPorId(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            return await connection.QueryFirstOrDefaultAsync<MovimientoStock>(
+                "SELECT Id, Nombre FROM MovimientosStock WHERE Id = @id",
+                new { id }
+            );
+        }
+
         public async Task<int> ObtenerStockActual(int idProducto)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -38,6 +48,27 @@ namespace Comercio.Infrastructure.Repositorios
                   (@IdProducto, @IdTipoMovimientoStock, @Cantidad, @Fecha, @IdReferencia, @Observaciones);",
                 movimiento
             );
+        }
+
+        public async Task Actualizar(MovimientoStock movimiento)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE MovimientosStock
+                        SET Cantidad = @Cantidad
+                        WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, movimiento);
+        }
+
+        public async Task Eliminar(int idMovimiento)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"DELETE FROM MovimientosStock
+                        WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, new { Id = idMovimiento });
         }
     }
 }
