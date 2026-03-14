@@ -19,7 +19,7 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             return await connection.QueryFirstOrDefaultAsync<MovimientoStock>(
-                "SELECT Id, Nombre FROM MovimientosStock WHERE Id = @id",
+                "SELECT Id, Observaciones FROM MovimientosStock WHERE Id = @id",
                 new { id }
             );
         }
