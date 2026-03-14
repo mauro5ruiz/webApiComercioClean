@@ -14,6 +14,18 @@ namespace Comercio.Infrastructure.Repositorios
             _connectionString = connectionString;
         }
 
+        public async Task<IEnumerable<MovimientoStock>> ObtenerPorProducto(int idProducto)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT IdProducto, IdTipoMovimiento as IdTipoMovimientoStock, Cantidad, IdReferencia, Fecha, Observaciones
+                FROM MovimientosStock
+                WHERE IdProducto = @idProducto
+                ORDER BY Fecha";
+
+            return await connection.QueryAsync<MovimientoStock>(sql, new { idProducto });
+        }
+
         public async Task<MovimientoStock?> ObtenerPorId(int id)
         {
             using var connection = new SqlConnection(_connectionString);

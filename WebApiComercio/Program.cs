@@ -37,6 +37,7 @@ builder.Services.AddScoped<IPerdidasServicio, PerdidasServicio>();
 builder.Services.AddScoped<IDevolucionesVentasServicio, DevolucionesVentasServicio>();
 builder.Services.AddScoped<IDevolucionesComprasServicio, DevolucionesComprasServicio>();
 builder.Services.AddScoped<IAjusteStockServicio, AjusteStockServicio>();
+builder.Services.AddScoped<IKardexServicio, KardexServicio>();
 
 // ===== Servicios (Infra) =====
 builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÑADIR
