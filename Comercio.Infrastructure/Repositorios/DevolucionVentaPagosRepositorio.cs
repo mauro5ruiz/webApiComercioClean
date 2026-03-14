@@ -5,11 +5,11 @@ using Microsoft.Data.SqlClient;
 
 namespace Comercio.Infrastructure.Repositorios
 {
-    public class DevolucionPagosRepositorio : IDevolucionPagosRepository
+    public class DevolucionVentaPagosRepositorio : IDevolucionPagosRepository
     {
         private readonly string _connectionString;
 
-        public DevolucionPagosRepositorio(string connectionString)
+        public DevolucionVentaPagosRepositorio(string connectionString)
         {
             _connectionString = connectionString;
         }

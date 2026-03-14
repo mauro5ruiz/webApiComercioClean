@@ -35,6 +35,7 @@ builder.Services.AddScoped<IVentasServicio, VentasServicio>();
 builder.Services.AddScoped<IComprasServicio, ComprasServicio>();
 builder.Services.AddScoped<IPerdidasServicio, PerdidasServicio>();
 builder.Services.AddScoped<IDevolucionesVentasServicio, DevolucionesVentasServicio>();
+builder.Services.AddScoped<IDevolucionesComprasServicio, DevolucionesComprasServicio>();
 
 // ===== Servicios (Infra) =====
 builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÑADIR
@@ -61,7 +62,11 @@ builder.Services.AddScoped<IPerdidasRepository>(_ => new PerdidasRepositorio(con
 builder.Services.AddScoped<IDetallePerdidasRepository>(_ => new DetallePerdidasRepositorio(connectionString));
 builder.Services.AddScoped<IDevolucionesVentasRepository>(_ => new DevolucionesVentasRepositorio(connectionString));
 builder.Services.AddScoped<IDetalleDevolucionesVentasRepository>(_ => new DetalleDevolucionesVentasRepositorio(connectionString));
-builder.Services.AddScoped<IDevolucionPagosRepository>(_ => new DevolucionPagosRepositorio(connectionString));
+builder.Services.AddScoped<IDevolucionPagosRepository>(_ => new DevolucionVentaPagosRepositorio(connectionString));
+builder.Services.AddScoped<IDevolucionComprasRepository>(_ => new DevolucionComprasRepositorio(connectionString));
+builder.Services.AddScoped<IDevolucionCompraDetalleRepository>(_ => new DetalleDevolucionesComprasRepositorio(connectionString));
+builder.Services.AddScoped<IPagoDevolucionCompraRepository>(_ => new DevolucionCompraPagosRepositorio(connectionString));
+builder.Services.AddScoped<ICreditoProveedorRepository>(_ => new CreditoProveedorRepositorio(connectionString));
 
 var app = builder.Build();
 
