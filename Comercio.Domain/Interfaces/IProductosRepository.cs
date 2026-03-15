@@ -15,5 +15,6 @@ namespace Comercio.Domain.Interfaces
         Task<bool> EliminarPermanentemente(int id);
         Task<bool> ActualizarPrecioIndividual(int idProducto, decimal valor, string tipoOperacion);
         Task<int> ActualizarPrecios(decimal valor, string tipoOperacion, int? idCategoria = null, int? idMarca = null, bool soloActivos = true);
+        Task<IEnumerable<Producto>> ObtenerProductosBajoStock();
     }
 }

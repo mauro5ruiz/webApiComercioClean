@@ -198,5 +198,10 @@ namespace Comercio.Application.Servicios
 
             return await _productosRepository.ActualizarPrecios(dto.Valor, tipoOperacion, dto.IdCategoria, dto.IdMarca, dto.SoloActivos);
         }
+
+        public async Task<IEnumerable<Producto>> ObtenerConStockBajo()
+        {
+            return await _productosRepository.ObtenerProductosBajoStock();
+        }
     }
 }

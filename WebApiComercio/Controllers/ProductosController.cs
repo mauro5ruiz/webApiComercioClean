@@ -136,5 +136,12 @@ namespace Comercio.Api.Controllers
             }
         }
 
+        [HttpGet("bajo-stock")]
+        public async Task<ActionResult<IEnumerable<ProductoDto>>> ObtenerProductosBajoStock()
+        {
+            var productos = await _productosServicio.ObtenerConStockBajo();
+
+            return Ok(productos);
+        }
     }
 }

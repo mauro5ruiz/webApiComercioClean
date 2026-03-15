@@ -7,13 +7,11 @@ namespace Comercio.Application.Interfaces
     {
         Task<IEnumerable<Producto>> ObtenerTodos(bool incluirEliminados = false);
         Task<Producto?> ObtenerPorId(int id);
-
+        Task<IEnumerable<Producto>> ObtenerConStockBajo();
         Task<int> Crear(CrearProductoDto producto);
         Task Actualizar(int id, ActualizarProductoDto producto);
-
         Task<bool> DarDeBaja(int id);
         Task<bool> Restaurar(int id);
-
         Task<bool> EliminarPermanentemente(int id);
         Task<bool> ActualizarPrecioIndividual(int idProducto, ActualizacionPrecioIndividualDto dto);
         Task<int> ActualizarPrecios(ActualizacionPrecioMasivamenteDto dto);

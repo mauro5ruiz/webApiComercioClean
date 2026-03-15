@@ -224,5 +224,30 @@ namespace Comercio.Infrastructure.Repositorios
 
             return filas > 0;
         }
+
+        public async Task<IEnumerable<Producto>> ObtenerProductosBajoStock()
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra, 
+                    p.IdCategoria, p.IdMarca, p.PrecioCompra, p.PrecioVenta,
+                    p.StockMinimo, p.ControlStock,
+                    ISNULL(SUM(ms.Cantidad), 0) AS StockActual,
+                    p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja
+                FROM Productos p
+                LEFT JOIN MovimientosStock ms ON p.Id = ms.IdProducto
+                WHERE p.Activo = 1
+                  AND p.ControlStock = 1
+                GROUP BY 
+                    p.Id, p.Nombre, p.Descripcion, p.Codigo, p.CodigoBarra,
+                    p.IdCategoria, p.IdMarca, p.PrecioCompra, p.PrecioVenta,
+                    p.StockMinimo, p.ControlStock,
+                    p.UrlImagen, p.Activo, p.FechaAlta, p.FechaBaja
+                HAVING ISNULL(SUM(ms.Cantidad), 0) < p.StockMinimo";
+
+            return await connection.QueryAsync<Producto>(sql);
+        }
     }
 }
