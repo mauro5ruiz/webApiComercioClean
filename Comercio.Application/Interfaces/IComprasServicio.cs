@@ -8,5 +8,6 @@ namespace Comercio.Application.Interfaces
         Task<Compra?> ObtenerPorId(int idCompra);
         Task<int> CrearCompra(Compra compra, IEnumerable<DetalleCompra> detalles, IEnumerable<CompraPago>? pagos = null);
         Task AnularCompra(int idCompra);
+        Task PagarProveedor(int idProveedor, decimal importe, int idFormaPago);
     }
 }

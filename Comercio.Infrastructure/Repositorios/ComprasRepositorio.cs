@@ -41,7 +41,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, otal, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Compras
                         WHERE NumeroComprobante = @NumeroComprobante;";
 
@@ -111,6 +111,20 @@ namespace Comercio.Infrastructure.Repositorios
                 TotalPagado = totalPagado,
                 SaldoPendiente = saldoPendiente
             });
+        }
+
+        public async Task<IEnumerable<Compra>> ObtenerPendientesPorProveedor(int idProveedor)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado
+                FROM Compras
+                WHERE IdProveedor = @IdProveedor
+                AND SaldoPendiente > 0
+                AND Estado = 1
+                ORDER BY Fecha ASC";
+
+            return await connection.QueryAsync<Compra>(sql, new { IdProveedor = idProveedor });
         }
     }
 }
