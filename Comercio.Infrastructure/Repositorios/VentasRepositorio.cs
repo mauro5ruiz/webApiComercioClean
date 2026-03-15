@@ -65,16 +65,20 @@ namespace Comercio.Infrastructure.Repositorios
             return await connection.QueryAsync<Venta>(sql);
         }
 
-        public async Task<IEnumerable<Venta>> ObtenerPorCliente(int idCliente)
+        public async Task<IEnumerable<Venta>> ObtenerPorCliente(int idCliente, bool soloPendientes = false)
         {
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor,
-                               IdSucursal, Total, TotalPagado, SaldoPendiente,
-                               Estado, Observaciones, FechaAnulacion
-                        FROM Ventas
-                        WHERE IdCliente = @IdCliente
-                        ORDER BY Fecha DESC";
+                       IdSucursal, Total, TotalPagado, SaldoPendiente,
+                       Estado, Observaciones, FechaAnulacion
+                FROM Ventas
+                WHERE IdCliente = @IdCliente";
+
+            if (soloPendientes)
+                sql += " AND SaldoPendiente > 0 AND Estado = 'Activa'";
+
+            sql += " ORDER BY Fecha ASC";
 
             return await connection.QueryAsync<Venta>(sql, new { IdCliente = idCliente });
         }

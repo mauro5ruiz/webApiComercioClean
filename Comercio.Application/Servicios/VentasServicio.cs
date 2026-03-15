@@ -174,5 +174,55 @@ namespace Comercio.Application.Servicios
             // Cambio estado de la venta
             await _ventasRepository.CambiarEstado(idVenta, "Anulada");
         }
+
+        public async Task<IEnumerable<Venta>> ObtenerPendientesPorCliente(int idCliente)
+        {
+            if (idCliente <= 0)
+                throw new ArgumentException("Cliente inválido.");
+
+            return await _ventasRepository.ObtenerPorCliente(idCliente, true);
+        }
+
+        public async Task CobrarCliente(int idCliente, decimal importe, int idFormaPago, string referencia)
+        {
+            if (idCliente <= 0)
+                throw new ArgumentException("Cliente inválido.");
+
+            if (importe <= 0)
+                throw new ArgumentException("El importe debe ser mayor a cero.");
+
+            var ventasPendientes = await _ventasRepository.ObtenerPorCliente(idCliente, true);
+
+            if (!ventasPendientes.Any())
+                throw new InvalidOperationException("El cliente no tiene ventas pendientes.");
+
+            decimal montoRestante = importe;
+
+            foreach (var venta in ventasPendientes.OrderBy(v => v.Fecha))
+            {
+                if (montoRestante <= 0)
+                    break;
+
+                var saldo = venta.SaldoPendiente;
+
+                var montoAplicar = Math.Min(saldo, montoRestante);
+
+                var pago = new VentaPago
+                {
+                    IdVenta = venta.Id,
+                    IdFormaPago = idFormaPago,
+                    Importe = montoAplicar,
+                    Referencia = referencia,
+                    FechaPago = DateTime.UtcNow,
+                    Estado = "Activo"
+                };
+
+                await _pagosRepository.Insertar(pago);
+
+                await _pagosRepository.RecalcularTotalPagado(venta.Id);
+
+                montoRestante -= montoAplicar;
+            }
+        }
     }
 }

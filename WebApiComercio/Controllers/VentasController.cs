@@ -83,18 +83,11 @@ namespace Comercio.Api.Controllers
 
                 var idVenta = await _ventasServicio.CrearVenta(venta, detalles, pagos);
 
-                return Ok(new
-                {
-                    Mensaje = "Venta creada correctamente",
-                    IdVenta = idVenta
-                });
+                return Ok(new { Mensaje = "Venta creada correctamente", IdVenta = idVenta });
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    Error = ex.Message
-                });
+                return BadRequest(new { Error = ex.Message });
             }
         }
 
@@ -109,10 +102,37 @@ namespace Comercio.Api.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    Error = ex.Message
-                });
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpGet("pendientes/cliente/{idCliente}")]
+        public async Task<IActionResult> ObtenerPendientesPorCliente(int idCliente)
+        {
+            try
+            {
+                var ventas = await _ventasServicio.ObtenerPendientesPorCliente(idCliente);
+
+                return Ok(ventas);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpPost("cobrar")]
+        public async Task<IActionResult> CobrarCliente([FromBody] CobrarDto dto)
+        {
+            try
+            {
+                await _ventasServicio.CobrarCliente(dto.IdCliente,dto.Importe,dto.IdFormaPago,dto.Referencia);
+
+                return Ok(new { Mensaje = "Cobro registrado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
             }
         }
     }
