@@ -20,6 +20,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // ===== Servicios (Application) =====
 builder.Services.AddScoped<ICategoriasServicio, CategoriasServicio>();
 builder.Services.AddScoped<IMarcasServicio, MarcasServicio>();
@@ -81,6 +92,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("Frontend");
 app.UseAuthorization();
 app.UseStaticFiles(); // importante para servir /carpeta/archivo desde wwwroot
 

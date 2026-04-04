@@ -19,9 +19,20 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return await connection.QueryAsync<Categoria>(
-                "SELECT Id, Nombre FROM Categorias"
+            var total = await connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM Categorias"
             );
+
+            var data = await connection.QueryAsync<Categoria>(
+                @"SELECT c.Id, c.Nombre, COUNT(p.Id) as CantidadProductos
+                  FROM Categorias c
+                  LEFT JOIN Productos p ON p.IdCategoria = c.Id
+                  GROUP BY c.Id, c.Nombre
+                  ORDER BY c.Id",
+                new { }
+            );
+
+            return data;
         }
 
         public async Task<Categoria?> ObtenerPorId(int id)
@@ -29,7 +40,11 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             return await connection.QueryFirstOrDefaultAsync<Categoria>(
-                "SELECT Id, Nombre FROM Categorias WHERE Id = @id",
+                "SELECT c.Id, c.Nombre, COUNT(p.Id) as CantidadProductos " +
+                "FROM Categorias c " +
+                "LEFT JOIN Productos p ON p.IdCategoria = c.Id " +
+                "WHERE c.Id = @id " +
+                "GROUP BY c.Id, c.Nombre",
                 new { id }
             );
         }
@@ -75,5 +90,6 @@ namespace Comercio.Infrastructure.Repositorios
                 new { id }
             );
         }
+
     }
 }

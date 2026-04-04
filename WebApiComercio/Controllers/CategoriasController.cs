@@ -39,8 +39,8 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var id = await _categoriasServicio.Crear(dto);
-                return CreatedAtAction(nameof(ObtenerPorId), new { id }, id);
+                var categoria = await _categoriasServicio.Crear(dto);
+                return CreatedAtAction(nameof(ObtenerPorId), new { id = categoria.Id }, categoria);
             }
             catch (ArgumentException ex)
             {
@@ -54,10 +54,9 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var actualizado = await _categoriasServicio.Actualizar(id, dto);
-                if (!actualizado) return NotFound();
+                var categoria = await _categoriasServicio.Actualizar(id, dto);
 
-                return NoContent();
+                return Ok(categoria);
             }
             catch (ArgumentException ex)
             {
@@ -69,10 +68,15 @@ namespace Comercio.Api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Eliminar([FromRoute] int id)
         {
-            var eliminado = await _categoriasServicio.Eliminar(id);
-            if (!eliminado) return NotFound();
-
-            return NoContent();
+            try
+            {
+                await _categoriasServicio.Eliminar(id);
+                return NoContent(); 
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }

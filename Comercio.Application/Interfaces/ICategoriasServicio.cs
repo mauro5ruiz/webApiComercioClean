@@ -6,8 +6,8 @@ namespace Comercio.Application.Interfaces
     {
         Task<IEnumerable<CategoriaDto>> ObtenerTodas();
         Task<CategoriaDto?> ObtenerPorId(int id);
-        Task<int> Crear(CrearCategoriaDto dto);
-        Task<bool> Actualizar(int id, CrearCategoriaDto dto);
-        Task<bool> Eliminar(int id);
+        Task<CategoriaDto> Crear(CrearCategoriaDto dto);
+        Task<CategoriaDto> Actualizar(int id, CrearCategoriaDto dto);
+        Task Eliminar(int id);
     }
 }

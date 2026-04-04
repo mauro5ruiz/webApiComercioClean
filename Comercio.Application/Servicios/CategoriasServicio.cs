@@ -28,7 +28,7 @@ namespace Comercio.Application.Servicios
             return categoria is null ? null : MapToDto(categoria);
         }
 
-        public async Task<int> Crear(CrearCategoriaDto dto)
+        public async Task<CategoriaDto> Crear(CrearCategoriaDto dto)
         {
             Validar(dto);
             var categoriaBd = await _categoriasRepository.ObtenerPorNombre(dto.Nombre.Trim());
@@ -41,40 +41,53 @@ namespace Comercio.Application.Servicios
                 Nombre = dto.Nombre.Trim()
             };
 
-            return await _categoriasRepository.Crear(categoria);
+            var id = await _categoriasRepository.Crear(categoria);
+
+            return new CategoriaDto
+            {
+                Id = id,
+                Nombre = categoria.Nombre
+            };
         }
 
-        public async Task<bool> Actualizar(int id, CrearCategoriaDto dto)
+        public async Task<CategoriaDto> Actualizar(int id, CrearCategoriaDto dto)
         {
-            if (id <= 0) return false;
+            if (id <= 0)
+                throw new ArgumentException("Id inválido");
+
             Validar(dto);
 
             var existente = await _categoriasRepository.ObtenerPorId(id);
             if (existente is null)
-                throw new ArgumentException($"No se encontró la ccategoria. Por favor, intente nuevamente.");
+                throw new ArgumentException("No se encontró la categoría.");
 
-            var existentePorNombre = await _categoriasRepository.ObtenerPorNombre(dto.Nombre);
+            var existentePorNombre = await _categoriasRepository.ObtenerPorNombre(dto.Nombre.Trim());
             if (existentePorNombre is not null && existentePorNombre.Id != id)
                 throw new ArgumentException($"Ya existe una categoría con el nombre: {dto.Nombre}.");
 
             existente.Nombre = dto.Nombre.Trim();
+
             await _categoriasRepository.Actualizar(existente);
 
-            return true;
+            return MapToDto(existente);
         }
 
-        public async Task<bool> Eliminar(int id)
+        public async Task Eliminar(int id)
         {
-            if (id <= 0) return false;
+            if (id <= 0)
+                throw new ArgumentException("Id inválido");
 
-            var existente = await _categoriasRepository.ObtenerPorId(id);
-            if (existente is null) return false;
+            var categoria = await _categoriasRepository.ObtenerPorId(id);
+            if (categoria is null)
+                throw new ArgumentException("No se encontró la categoría.");
 
+            if (categoria.CantidadProductos > 0)
+                throw new ArgumentException($"No se puede borrar la categoría '{categoria.Nombre}' porque tiene {categoria.CantidadProductos} producto(s) asociados.");
+            
             await _categoriasRepository.Eliminar(id);
-            return true;
         }
 
-        private static CategoriaDto MapToDto(Categoria categoria) => new() { Id = categoria.Id, Nombre = categoria.Nombre };
+        private static CategoriaDto MapToDto(Categoria categoria) => new() { Id = categoria.Id, Nombre = categoria.Nombre, CantidadProductos = categoria.CantidadProductos };
 
         private static void Validar(CrearCategoriaDto dto)
         {
