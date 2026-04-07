@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Comercio.Api.Controllers
 {
     [ApiController]
-    [Route("api/fornas-de-pago")]
+    [Route("api/formas-de-pago")]
     public class FormasDePagoController : Controller
     {
         private readonly IFormasDePagoServicio _formasDePagoServicio;
@@ -21,8 +21,8 @@ namespace Comercio.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FormaDePagoDto>>> Obtener()
         {
-            var categorias = await _formasDePagoServicio.ObtenerTodas();
-            return Ok(categorias);
+            var formaDePagos = await _formasDePagoServicio.ObtenerTodas();
+            return Ok(formaDePagos);
         }
 
         // GET: api/formas-de-pago/{id}
@@ -41,8 +41,8 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var id = await _formasDePagoServicio.Crear(dto);
-                return CreatedAtAction(nameof(ObtenerPorId), new { id }, id);
+                var formaDePago = await _formasDePagoServicio.Crear(dto);
+                return CreatedAtAction(nameof(ObtenerPorId), new { id = formaDePago.Id }, formaDePago);
             }
             catch (ArgumentException ex)
             {
@@ -56,10 +56,9 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var actualizado = await _formasDePagoServicio.Actualizar(id, dto);
-                if (!actualizado) return NotFound();
+                var formaDePago = await _formasDePagoServicio.Actualizar(id, dto);
 
-                return NoContent();
+                return Ok(formaDePago);
             }
             catch (ArgumentException ex)
             {
@@ -71,10 +70,15 @@ namespace Comercio.Api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Eliminar([FromRoute] int id)
         {
-            var eliminado = await _formasDePagoServicio.Eliminar(id);
-            if (!eliminado) return NotFound();
-
-            return NoContent();
+            try
+            {
+                await _formasDePagoServicio.Eliminar(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }

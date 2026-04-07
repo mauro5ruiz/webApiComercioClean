@@ -1,5 +1,4 @@
-﻿using Comercio.Application.Dtos.Categorias;
-using Comercio.Application.Dtos.FormasDePago;
+﻿using Comercio.Application.Dtos.FormasDePago;
 using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Interfaces;
@@ -29,7 +28,7 @@ namespace Comercio.Application.Servicios
             return forma is null ? null : MapToDto(forma);
         }
 
-        public async Task<int> Crear(CrearFormaDePagoDto dto)
+        public async Task<FormaDePagoDto> Crear(CrearFormaDePagoDto dto)
         {
             Validar(dto);
             var formaBd = await _formasDePagoRepository.ObtenerPorNombre(dto.Nombre.Trim());
@@ -42,12 +41,19 @@ namespace Comercio.Application.Servicios
                 Nombre = dto.Nombre.Trim()
             };
 
-            return await _formasDePagoRepository.Crear(formaDePago);
+            var id = await _formasDePagoRepository.Crear(formaDePago);
+
+            return new FormaDePagoDto
+            {
+                Id = id,
+                Nombre = formaDePago.Nombre
+            };
         }
 
-        public async Task<bool> Actualizar(int id, CrearFormaDePagoDto dto)
+        public async Task<FormaDePagoDto> Actualizar(int id, CrearFormaDePagoDto dto)
         {
-            if (id <= 0) return false;
+            if (id <= 0) throw new ArgumentException("Id inválido");
+
             Validar(dto);
 
             var existente = await _formasDePagoRepository.ObtenerPorId(id);
@@ -61,18 +67,23 @@ namespace Comercio.Application.Servicios
             existente.Nombre = dto.Nombre.Trim();
             await _formasDePagoRepository.Actualizar(existente);
 
-            return true;
+            return MapToDto(existente);
         }
 
-        public async Task<bool> Eliminar(int id)
+        public async Task Eliminar(int id)
         {
-            if (id <= 0) return false;
+            if (id <= 0) throw new ArgumentException("Id inválido");
 
-            var existente = await _formasDePagoRepository.ObtenerPorId(id);
-            if (existente is null) return false;
+            var formaDePago = await _formasDePagoRepository.ObtenerPorId(id);
+            if (formaDePago is null) throw new ArgumentException("No se encontró la forma de pago.");
+
+            if (formaDePago.CantidadCompras > 0)
+                throw new InvalidOperationException("No se puede eliminar la forma de pago porque tiene compras asocadas.");
+
+            if(formaDePago.CantidadVentas > 0)
+                throw new InvalidOperationException("No se puede eliminar la forma de pago porque tiene ventas asociadas.");
 
             await _formasDePagoRepository.Eliminar(id);
-            return true;
         }
 
         private static FormaDePagoDto MapToDto(FormaDePago forma) => new() { Id = forma.Id, Nombre = forma.Nombre };

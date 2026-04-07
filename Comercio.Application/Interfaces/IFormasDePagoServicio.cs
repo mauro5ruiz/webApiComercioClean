@@ -6,8 +6,8 @@ namespace Comercio.Application.Interfaces
     {
         Task<IEnumerable<FormaDePagoDto>> ObtenerTodas();
         Task<FormaDePagoDto?> ObtenerPorId(int id);
-        Task<int> Crear(CrearFormaDePagoDto dto);
-        Task<bool> Actualizar(int id, CrearFormaDePagoDto dto);
-        Task<bool> Eliminar(int id);
+        Task<FormaDePagoDto> Crear(CrearFormaDePagoDto dto);
+        Task<FormaDePagoDto> Actualizar(int id, CrearFormaDePagoDto dto);
+        Task Eliminar(int id);
     }
 }

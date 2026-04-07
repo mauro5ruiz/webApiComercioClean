@@ -18,9 +18,16 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return await connection.QueryAsync<FormaDePago>(
-                "SELECT Id, Nombre FROM FormasDePago"
+            var data = await connection.QueryAsync<FormaDePago>(
+                @"SELECT f.Id, f.Nombre, COUNT(DISTINCT vp.IdVenta) AS CantidadVentas, COUNT(DISTINCT cp.IdCompra) AS CantidadCompras
+                   FROM FormasDePago f
+                   LEFT JOIN VentaPagos vp ON vp.IdFormaPago = f.Id
+                   LEFT JOIN CompraPagos cp ON cp.IdFormaPago = f.Id
+                   GROUP BY f.Id, f.Nombre
+                   ORDER BY f.Id"
             );
+
+            return data;
         }
 
         public async Task<FormaDePago?> ObtenerPorId(int id)
@@ -28,7 +35,13 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             return await connection.QueryFirstOrDefaultAsync<FormaDePago>(
-                "SELECT Id, Nombre FROM FormasDePago WHERE Id = @id",
+                "SELECT f.Id, f.Nombre, COUNT(DISTINCT vp.IdVenta) AS CantidadVentas, COUNT(DISTINCT cp.IdCompra) AS CantidadCompras " +
+                "FROM FormasDePago f " +
+                "LEFT JOIN VentaPagos vp ON vp.IdFormaPago = f.Id " +
+                "LEFT JOIN CompraPagos cp ON cp.IdFormaPago = f.Id " +
+                "WHERE f.Id = @id " +
+                "GROUP BY f.Id, f.Nombre " +
+                "ORDER BY f.Id",
                 new { id }
             );
         }
