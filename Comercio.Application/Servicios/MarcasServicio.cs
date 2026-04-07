@@ -16,6 +16,12 @@ namespace Comercio.Application.Servicios
             _archivoServicio = archivoService;
         }
 
+        public async Task<IEnumerable<MarcaDto>> ObtenerTodas()
+        {
+            var marcas = await _marcasRepository.ObtenerTodas();
+            return marcas.Select(MapToDto);
+        }
+
         public async Task<MarcaDto?> ObtenerPorId(int id)
         {
             if (id <= 0) return null;
@@ -24,13 +30,7 @@ namespace Comercio.Application.Servicios
             return marca is null ? null : MapToDto(marca);
         }
 
-        public async Task<IEnumerable<MarcaDto>> ObtenerTodas()
-        {
-            var marcas = await _marcasRepository.ObtenerTodas();
-            return marcas.Select(MapToDto);
-        }
-
-        public async Task<int> Crear(CrearMarcaDto dto)
+        public async Task<MarcaDto> Crear(CrearMarcaDto dto)
         {
             Validar(dto);
 
@@ -48,11 +48,19 @@ namespace Comercio.Application.Servicios
                 Activa = dto.Activa
             };
 
-            return await _marcasRepository.Crear(marca);
+            var id =  await _marcasRepository.Crear(marca);
+
+            return new MarcaDto
+            {
+                Id = id,
+                Nombre = marca.Nombre,
+                Imagen = marca.Imagen,
+                Activa = marca.Activa
+            };
         }
 
 
-        public async Task<bool> Actualizar(int id, CrearMarcaDto dto)
+        public async Task<MarcaDto> Actualizar(int id, CrearMarcaDto dto)
         {
             if (id <= 0)
                 throw new ArgumentException("Id inválido.", nameof(id));
@@ -68,7 +76,7 @@ namespace Comercio.Application.Servicios
 
             var existente = await _marcasRepository.ObtenerPorId(id);
             if (existente is null)
-                return false;
+                throw new ArgumentException("No se encontró la marca.");
 
             var marcaConMismoNombre = await _marcasRepository.ObtenerPorNombre(dto.Nombre.Trim());
 
@@ -80,31 +88,35 @@ namespace Comercio.Application.Servicios
             if (dto.Imagen is not null && dto.Imagen.Length > 0)
                 rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen,"marcas",existente.Imagen);
 
+            if(dto.EliminarImagen)
+                _archivoServicio.EliminarImagen(existente.Imagen);
+
             existente.Nombre = dto.Nombre.Trim();
-            existente.Imagen = rutaImagen;
+            existente.Imagen = dto.EliminarImagen ? "" : rutaImagen;
             existente.Activa = dto.Activa;
 
             await _marcasRepository.Actualizar(existente);
-            return true;
+
+            return MapToDto(existente);
         }
 
 
-        public async Task<bool> Eliminar(int id)
+        public async Task Eliminar(int id)
         {
-            if (id <= 0) return false;
+            if (id <= 0) throw new ArgumentException("Id inválido");
 
             var existente = await _marcasRepository.ObtenerPorId(id);
-            if (existente is null) return false;
+            if (existente is null) throw new ArgumentException("No se encontró la marca");
+
+            if (existente.CantidadProductos > 0) throw new ArgumentException($"No se puede borrar marca porque se utiliza en {existente.CantidadProductos} productos");
 
             if (!string.IsNullOrEmpty(existente.Imagen))
                 _archivoServicio.EliminarImagen(existente.Imagen);
 
-
             await _marcasRepository.Eliminar(id);
-            return true;
         }
 
-        private static MarcaDto MapToDto(Marca marca) => new() { Id = marca.Id, Nombre = marca.Nombre, Imagen = marca.Imagen };
+        private static MarcaDto MapToDto(Marca marca) => new() { Id = marca.Id, Nombre = marca.Nombre, Imagen = marca.Imagen, Activa = marca.Activa };
 
         private static void Validar(CrearMarcaDto dto)
         {

@@ -1,5 +1,6 @@
 ﻿using Comercio.Application.Dtos.Marcas;
 using Comercio.Application.Interfaces;
+using Comercio.Application.Servicios;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Comercio.Api.Controllers
@@ -37,8 +38,8 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var id = await _marcasServicio.Crear(dto);
-                return CreatedAtAction(nameof(ObtenerPorId), new { id }, id);
+                var marca = await _marcasServicio.Crear(dto);
+                return CreatedAtAction(nameof(ObtenerPorId), new { id = marca.Id }, marca);
             }
             catch (ArgumentException ex)
             {
@@ -51,11 +52,9 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var actualizado = await _marcasServicio.Actualizar(id, dto);
-                if (!actualizado)
-                    return NotFound();
+                var marca = await _marcasServicio.Actualizar(id, dto);
 
-                return NoContent();
+                return Ok(marca);
             }
             catch (ArgumentException ex)
             {
@@ -66,11 +65,15 @@ namespace Comercio.Api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Eliminar([FromRoute] int id)
         {
-            var eliminado = await _marcasServicio.Eliminar(id);
-            if (!eliminado)
-                return NotFound();
-
-            return NoContent();
+            try
+            {
+                await _marcasServicio.Eliminar(id);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }

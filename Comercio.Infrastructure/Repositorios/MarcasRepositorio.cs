@@ -19,7 +19,11 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             return await connection.QueryFirstOrDefaultAsync<Marca>(
-                "SELECT Id, Nombre, UrlImagen as Imagen, Activa FROM Marcas WHERE Id = @id",
+                @"SELECT m.Id, m.Nombre, m.UrlImagen as Imagen, m.Activa, COUNT(p.Id) AS CantidadProductos
+                  FROM Marcas m
+                  LEFT JOIN Productos p ON p.IdMarca = m.Id
+                  WHERE m.Id = @id
+                  GROUP BY m.Id, m.Nombre, m.UrlImagen, m.Activa",
                 new { id }
             );
         }

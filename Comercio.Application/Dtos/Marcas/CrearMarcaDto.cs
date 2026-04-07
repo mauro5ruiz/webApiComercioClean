@@ -10,5 +10,6 @@ namespace Comercio.Application.Dtos.Marcas
         public string Nombre { get; set; }
         public IFormFile? Imagen { get; set; }
         public bool Activa { get; set; }
+        public bool EliminarImagen { get; set; }
     }
 }
