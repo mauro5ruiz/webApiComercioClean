@@ -1,5 +1,6 @@
 ﻿using Comercio.Application.Dtos.Proveedores;
 using Comercio.Application.Interfaces;
+using Comercio.Domain.Entidades;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Comercio.Api.Controllers
@@ -38,9 +39,9 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                var id = await _proveedoresServicio.Crear(dto);
+                var proveedor = await _proveedoresServicio.Crear(dto);
 
-                return CreatedAtAction(nameof(ObtenerPorId),new { id }, id);
+                return CreatedAtAction(nameof(ObtenerPorId),new { id = proveedor.Id }, proveedor);
             }
             catch (ArgumentException ex)
             {
@@ -53,9 +54,9 @@ namespace Comercio.Api.Controllers
         {
             try
             {
-                await _proveedoresServicio.Actualizar(id, dto);
+                var proveedor = await _proveedoresServicio.Actualizar(id, dto);
 
-                return NoContent();
+                return Ok(proveedor);
             }
             catch (InvalidOperationException ex)
             {
@@ -70,32 +71,29 @@ namespace Comercio.Api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Eliminar([FromRoute] int id)
         {
-            var eliminado = await _proveedoresServicio.EliminarPermanentemente(id);
-
-            if (!eliminado)
-                return NotFound();
+            await _proveedoresServicio.EliminarPermanentemente(id);
 
             return NoContent();
         }
 
-        [HttpPatch("{id:int}/baja")]
-        public async Task<IActionResult> DarDeBaja([FromRoute] int id)
+        [HttpPatch("{id:int}/desactivar")]
+        public async Task<IActionResult> Desactivar(int id)
         {
-            var baja = await _proveedoresServicio.DarDeBaja(id);
+            var ok = await _proveedoresServicio.DarDeBaja(id);
 
-            if (!baja)
-                return NotFound();
+            if (!ok)
+                return NotFound(new { error = "Proveedor no encontrado" });
 
             return NoContent();
         }
 
-        [HttpPatch("{id:int}/restauracion")]
-        public async Task<IActionResult> Restaurar([FromRoute] int id)
+        [HttpPatch("{id:int}/activar")]
+        public async Task<IActionResult> Activar(int id)
         {
-            var restaurado = await _proveedoresServicio.Restaurar(id);
+            var ok = await _proveedoresServicio.Restaurar(id);
 
-            if (!restaurado)
-                return NotFound();
+            if (!ok)
+                return NotFound(new { error = "Proveedor no encontrado" });
 
             return NoContent();
         }

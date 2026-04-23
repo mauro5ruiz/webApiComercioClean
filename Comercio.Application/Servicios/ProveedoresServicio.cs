@@ -32,7 +32,7 @@ namespace Comercio.Application.Servicios
             return await _repository.ObtenerTodos(incluirEliminados);
         }
 
-        public async Task<int> Crear(CrearProveedorDto dto)
+        public async Task<ProveedorDto> Crear(CrearProveedorDto dto)
         {
             if (dto == null)
                 throw new ArgumentNullException(nameof(dto));
@@ -53,14 +53,31 @@ namespace Comercio.Application.Servicios
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "proveedores");
 
             var proveedor = _mapper.Map<Proveedor>(dto);
-            proveedor.Activo = true;
             proveedor.FechaCreacion = DateTime.UtcNow;
             proveedor.UrlImagen = rutaImagen;
 
-            return await _repository.Crear(proveedor);
+            var id = await _repository.Crear(proveedor);
+
+            return new ProveedorDto
+            {
+                Id = id,
+                RazonSocial = proveedor.RazonSocial,
+                Cuit = proveedor.CUIT,
+                CondicionIva = proveedor.CondicionIVA,
+                Telefono = proveedor.Telefono,
+                Email = proveedor.Email,
+                PersonaContacto = proveedor.PersonaContacto,
+                Direccion = proveedor.Direccion,
+                Provincia = proveedor.Provincia,
+                Localidad = proveedor.Localidad,
+                CodigoPostal = proveedor.CodigoPostal,
+                Observaciones = proveedor.Observaciones,
+                UrlImagen = proveedor.UrlImagen,
+                Activo = proveedor.Activo
+            };
         }
 
-        public async Task Actualizar(int id, ActualizarProveedorDto dto)
+        public async Task<ProveedorDto> Actualizar(int id, ActualizarProveedorDto dto)
         {
             if (dto == null)
                 throw new ArgumentNullException(nameof(dto));
@@ -81,14 +98,39 @@ namespace Comercio.Application.Servicios
 
             var rutaImagen = existente.UrlImagen;
 
-            if (dto.Imagen is not null && dto.Imagen.Length > 0)
+            if (dto.Imagen is not null && dto.Imagen.Length > 0) { }
                 rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "proveedores", existente.UrlImagen);
 
             var proveedor = _mapper.Map<Proveedor>(dto);
             proveedor.Id = id;
             proveedor.UrlImagen = rutaImagen;
 
+
+            if (dto.EliminarImagen && !string.IsNullOrEmpty(rutaImagen))
+            {
+                _archivoServicio.EliminarImagen(rutaImagen);
+                proveedor.UrlImagen = null;
+            }
+
             await _repository.Actualizar(proveedor);
+
+            return new ProveedorDto
+            {
+                Id = id,
+                RazonSocial = proveedor.RazonSocial,
+                Cuit = proveedor.CUIT,
+                CondicionIva = proveedor.CondicionIVA,
+                Telefono = proveedor.Telefono,
+                Email = proveedor.Email,
+                PersonaContacto = proveedor.PersonaContacto,
+                Direccion = proveedor.Direccion,
+                Provincia = proveedor.Provincia,
+                Localidad = proveedor.Localidad,
+                CodigoPostal = proveedor.CodigoPostal,
+                Observaciones = proveedor.Observaciones,
+                UrlImagen = proveedor.UrlImagen,
+                Activo = proveedor.Activo
+            };
         }
 
         public async Task<bool> DarDeBaja(int id)
@@ -107,21 +149,15 @@ namespace Comercio.Application.Servicios
             return await _repository.Restaurar(id);
         }
 
-        public async Task<bool> EliminarPermanentemente(int id)
+        public async Task EliminarPermanentemente(int id)
         {
-            try
-            {
-                if (id <= 0)
-                    throw new ArgumentException("Id erróneo.");
+            if (id <= 0)
+                throw new ArgumentException("Id erróneo.");
 
-                await _repository.EliminarPermanentemente(id);
+            var existente = await _repository.ObtenerPorId(id);
+            if (existente is null) throw new ArgumentException("No se encontró el proveedor");
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
+            await _repository.EliminarPermanentemente(id);
         }
 
         private string NormalizarCuit(string cuit)

@@ -73,7 +73,7 @@ namespace Comercio.Infrastructure.Repositorios
                         VALUES
                         (@RazonSocial, @Cuit, @CondicionIva, @Telefono, @Email, @PersonaContacto,
                          @Direccion, @Localidad, @Provincia, @CodigoPostal, @Observaciones,
-                         1, @UrlImagen, @FechaCreacion);
+                         @Activo, @UrlImagen, @FechaCreacion);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -99,7 +99,8 @@ namespace Comercio.Infrastructure.Repositorios
                             Provincia = @Provincia,
                             CodigoPostal = @CodigoPostal,
                             Observaciones = @Observaciones,
-                            UrlImagen = @UrlImagen
+                            UrlImagen = @UrlImagen,
+                            Activo = @Activo
                         WHERE Id = @Id";
 
             await connection.ExecuteAsync(sql, proveedor);

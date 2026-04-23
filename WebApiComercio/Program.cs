@@ -4,7 +4,8 @@ using Comercio.Application.Mapping;
 using Comercio.Application.Servicios;
 using Comercio.Domain.Interfaces;
 using Comercio.Infrastructure.Repositorios;
-using Comercio.Infrastructure.Servicios; // <-- AÑADIR
+using Comercio.Infrastructure.Servicios;
+using Microsoft.AspNetCore.Diagnostics; // <-- AÑADIR
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,5 +98,30 @@ app.UseAuthorization();
 app.UseStaticFiles(); // importante para servir /carpeta/archivo desde wwwroot
 
 app.MapControllers();
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var exception = context.Features
+            .Get<IExceptionHandlerFeature>()?.Error;
+
+        var response = new
+        {
+            error = exception?.Message ?? "Error interno"
+        };
+
+        context.Response.StatusCode = exception switch
+        {
+            ArgumentException => StatusCodes.Status400BadRequest,
+            InvalidOperationException => StatusCodes.Status400BadRequest,
+            _ => StatusCodes.Status500InternalServerError
+        };
+
+        await context.Response.WriteAsJsonAsync(response);
+    });
+});
 
 app.Run();
