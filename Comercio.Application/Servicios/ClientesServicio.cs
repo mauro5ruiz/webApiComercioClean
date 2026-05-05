@@ -71,7 +71,10 @@ namespace Comercio.Application.Servicios
             var existe = await _repository.ExisteRepetido(dto.TipoCliente, identificador);
 
             if (existe)
-                throw new InvalidOperationException("Ya existe un cliente con ese CUIT.");
+            {
+                string tipoIdentificador = dto.TipoCliente == 1 ? "DNI" : "Cuit";
+                throw new InvalidOperationException($"Ya existe un cliente con ese {tipoIdentificador}.");
+            }
 
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "clientes");
 
@@ -83,7 +86,15 @@ namespace Comercio.Application.Servicios
                 RazonSocial = dto.RazonSocial?.Trim(),
                 NroDocumento = dto.NroDocumento,
                 Cuit = dto.Cuit,
-                Activo = true,
+                Direccion = dto.Direccion,
+                NroTelefono = dto.NroTelefono,
+                Email = dto.Email,
+                Localidad = dto.Localidad,
+                Provincia = dto.Provincia,
+                CodigoPostal = dto.CodigoPostal,
+                Observaciones = dto.Observaciones,
+                CondicionIva = dto.CondicionIva,
+                Activo = dto.Activo,
                 FechaAlta = DateTime.UtcNow,
                 UrlImagen = rutaImagen
             };
@@ -152,17 +163,30 @@ namespace Comercio.Application.Servicios
 
             var cliente = new Cliente
             {
-                Id = id,
                 TipoCliente = dto.TipoCliente,
                 Nombre = dto.Nombre?.Trim(),
                 Apellido = dto.Apellido?.Trim(),
                 RazonSocial = dto.RazonSocial?.Trim(),
                 NroDocumento = dto.NroDocumento,
                 Cuit = dto.Cuit,
-                UrlImagen = rutaImagen,
-                Activo = existente.Activo,
-                FechaAlta = existente.FechaAlta
+                Direccion = dto.Direccion,
+                NroTelefono = dto.NroTelefono,
+                Email = dto.Email,
+                Localidad = dto.Localidad,
+                Provincia = dto.Provincia,
+                CodigoPostal = dto.CodigoPostal,
+                Observaciones = dto.Observaciones,
+                CondicionIva = dto.CondicionIva,
+                Activo = dto.Activo,
+                FechaAlta = DateTime.UtcNow,
+                UrlImagen = rutaImagen
             };
+
+            if (dto.EliminarImagen && !string.IsNullOrEmpty(rutaImagen))
+            {
+                _archivoServicio.EliminarImagen(rutaImagen);
+                cliente.UrlImagen = null;
+            }
 
             await _repository.Actualizar(cliente);
         }
