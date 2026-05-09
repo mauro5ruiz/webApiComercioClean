@@ -124,5 +124,57 @@ namespace Comercio.Application.Servicios
 
             await _detalleRepository.Actualizar(detalle);
         }
+
+        public async Task CambiarEstado(int idPerdida, int idEstado)
+        {
+            var perdida = await _perdidasRepository.ObtenerPorId(idPerdida);
+
+            if (perdida == null)
+                throw new Exception("La pérdida no existe");
+
+            await _perdidasRepository.CambiarEstado(idPerdida, idEstado);
+
+            // si se CONFIRMA la pérdida, se asegura impacto en stock
+            if (idEstado == (int)EstadoPerdida.Confirmada)
+            {
+                var detalles = await _detalleRepository.ObtenerPorPerdida(idPerdida);
+
+                foreach (var detalle in detalles)
+                {
+                    var movimiento = new MovimientoStock
+                    {
+                        IdProducto = detalle.IdProducto,
+                        Cantidad = -detalle.Cantidad,
+                        IdTipoMovimientoStock = TipoMovimientoStock.Perdida,
+                        Fecha = DateTime.UtcNow,
+                        IdReferencia = idPerdida,
+                        Observaciones = "Confirmación de pérdida"
+                    };
+
+                    await _movimientosStockRepository.RegistrarMovimiento(movimiento);
+                }
+            }
+
+            // si se ANULA la pérdida, devolvés stock
+            if (idEstado == (int)EstadoPerdida.Anulada)
+            {
+                var detalles = await _detalleRepository.ObtenerPorPerdida(idPerdida);
+
+                foreach (var detalle in detalles)
+                {
+                    var movimiento = new MovimientoStock
+                    {
+                        IdProducto = detalle.IdProducto,
+                        Cantidad = detalle.Cantidad,
+                        IdTipoMovimientoStock = TipoMovimientoStock.AnulacionPerdida,
+                        Fecha = DateTime.UtcNow,
+                        IdReferencia = idPerdida,
+                        Observaciones = "Anulación de pérdida"
+                    };
+
+                    await _movimientosStockRepository.RegistrarMovimiento(movimiento);
+                }
+            }
+        }
     }
 }

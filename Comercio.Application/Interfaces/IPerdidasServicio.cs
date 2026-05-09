@@ -12,5 +12,6 @@ namespace Comercio.Application.Interfaces
         Task ActualizarDetalle(DetallePerdida detalle);
         Task EliminarDetalle(int idDetalle);
         Task ActualizarPerdida(int idPerdida, string motivo, string observacion);
+        Task CambiarEstado(int idPerdida, int idEstado);
     }
 }

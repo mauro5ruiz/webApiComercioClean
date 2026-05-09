@@ -67,5 +67,17 @@ namespace Comercio.Infrastructure.Repositorios
                 Observacion = observacion
             });
         }
+        public async Task CambiarEstado(int idPerdida, int idEstado)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Perdidas SET IdEstado = @IdEstado WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = idPerdida,
+                IdEstado = idEstado
+            });
+        }
     }
 }

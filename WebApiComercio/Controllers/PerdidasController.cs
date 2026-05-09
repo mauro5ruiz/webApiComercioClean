@@ -1,6 +1,7 @@
 ﻿using Comercio.Application.Dtos.Perdidas;
 using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
+using Comercio.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Comercio.Api.Controllers
@@ -135,6 +136,36 @@ namespace Comercio.Api.Controllers
                 await _perdidasServicio.ActualizarPerdida(id, request.Motivo, request.Observacion);
 
                 return Ok(new { Mensaje = "Pérdida actualizada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/aprobar")]
+        public async Task<IActionResult> Aprobar(int id)
+        {
+            try
+            {
+                await _perdidasServicio.CambiarEstado(id, (int)EstadoPerdida.Confirmada); // 2 = Confirmada
+
+                return Ok(new { Mensaje = "Pérdida aprobada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/rechazar")]
+        public async Task<IActionResult> Rechazar(int id)
+        {
+            try
+            {
+                await _perdidasServicio.CambiarEstado(id, (int)EstadoPerdida.Anulada); // 3 = Anulada
+
+                return Ok(new { Mensaje = "Pérdida rechazada correctamente" });
             }
             catch (Exception ex)
             {
