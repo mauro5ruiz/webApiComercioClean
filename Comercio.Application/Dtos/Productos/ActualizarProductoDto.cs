@@ -29,12 +29,12 @@ namespace Comercio.Application.Dtos.Productos
 
         [Range(0, double.MaxValue, ErrorMessage = "El precio de venta no puede ser negativo.")]
         public decimal PrecioVenta { get; set; }
-
+        public bool Activo { get; set; }
         public bool ControlStock { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "El stock mínimo no puede ser negativo.")]
         public int StockMinimo { get; set; }
-
+        public bool EliminarImagen { get; set; }
         public IFormFile? Imagen { get; set; }
     }
 }

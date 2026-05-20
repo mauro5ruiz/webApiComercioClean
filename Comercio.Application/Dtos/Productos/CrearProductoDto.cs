@@ -39,7 +39,7 @@ namespace Comercio.Application.Dtos.Productos
 
         [Range(0, int.MaxValue, ErrorMessage = "El stock inicial no puede ser negativo.")]
         public int StockInicial { get; set; }
-
+        public bool Activo { get; set; }
         public IFormFile? Imagen { get; set; }
     }
 }

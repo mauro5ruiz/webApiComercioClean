@@ -51,6 +51,9 @@ namespace Comercio.Application.Servicios
             if (dto.StockInicial < 0)
                 throw new ArgumentException("El stock no puede ser negativo.");
 
+            if (dto.PrecioCompra <= 0 ||  dto.PrecioVenta <= 0)
+                throw new ArgumentException("Debe ingresar obligatoriamente los precios de compra y venta");
+
             if (dto.PrecioCompra >= dto.PrecioVenta)
                 throw new ArgumentException("El precio de venta debe ser mayor al precio de compra");
 
@@ -75,7 +78,6 @@ namespace Comercio.Application.Servicios
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "productos");
 
             var producto = _mapper.Map<Producto>(dto);
-            producto.Activo = true;
             producto.FechaAlta = DateTime.UtcNow;
             producto.UrlImagen = rutaImagen;
 
@@ -141,9 +143,12 @@ namespace Comercio.Application.Servicios
             if (dto.Imagen is not null && dto.Imagen.Length > 0)
                 rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "productos", existente.UrlImagen);
 
+            if (dto.EliminarImagen && !string.IsNullOrEmpty(existente.UrlImagen))
+                _archivoServicio.EliminarImagen(existente.UrlImagen);
+
             var producto = _mapper.Map<Producto>(dto);
             producto.Id = id;
-            producto.UrlImagen = rutaImagen;
+            producto.UrlImagen = dto.EliminarImagen ? "" : rutaImagen;
 
             await _productosRepository.Actualizar(producto);
         }

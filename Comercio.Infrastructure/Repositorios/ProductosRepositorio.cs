@@ -105,12 +105,11 @@ namespace Comercio.Infrastructure.Repositorios
                          StockMinimo, ControlStock, UrlImagen, Activo, FechaAlta)
                         VALUES
                         (@Nombre, @Descripcion, @Codigo, @CodigoBarra, @IdCategoria, @IdMarca, @PrecioCompra, 
-                         @PrecioVenta, @StockMinimo, @ControlStock, @UrlImagen, 1, @FechaAlta);
+                         @PrecioVenta, @StockMinimo, @ControlStock, @UrlImagen, @Activo, @FechaAlta);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
             producto.FechaAlta = DateTime.UtcNow;
-            producto.Activo = true;
 
             return await connection.ExecuteScalarAsync<int>(sql, producto);
         }
@@ -170,7 +169,8 @@ namespace Comercio.Infrastructure.Repositorios
                             PrecioVenta = @PrecioVenta,
                             StockMinimo = @StockMinimo,
                             ControlStock = @ControlStock,
-                            UrlImagen = @UrlImagen
+                            UrlImagen = @UrlImagen,
+                            Activo = @Activo
                         WHERE Id = @Id";
 
             var filas = await connection.ExecuteAsync(sql, producto);
