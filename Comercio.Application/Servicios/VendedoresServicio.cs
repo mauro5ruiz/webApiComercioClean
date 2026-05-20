@@ -49,7 +49,7 @@ namespace Comercio.Application.Servicios
                 FechaNacimiento = dto.FechaNacimiento,
                 IdSucursal = dto.IdSucursal,
                 FechaAlta = DateTime.UtcNow,
-                Activo = true,
+                Activo = dto.Activo,
                 Observaciones = dto.Observaciones?.Trim(),
                 PinHash = dto.PinHash?.Trim() ?? string.Empty
             };
@@ -84,7 +84,7 @@ namespace Comercio.Application.Servicios
                 FechaNacimiento = dto.FechaNacimiento,
                 IdSucursal = dto.IdSucursal,
                 FechaAlta = DateTime.UtcNow,
-                Activo = true,
+                Activo = dto.Activo,
                 Observaciones = dto.Observaciones?.Trim(),
                 PinHash = dto.PinHash?.Trim() ?? string.Empty
             };

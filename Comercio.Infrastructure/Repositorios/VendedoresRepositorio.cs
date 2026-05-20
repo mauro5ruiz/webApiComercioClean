@@ -19,7 +19,7 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"SELECT Id, Nombre, Apellido, NroDni, Email, Telefono, Direccion, FechaNacimiento, Activo, 
-                            FechaAlta, FechaEliminado, Observaciones, PinHash, IdSucursal
+                            FechaAlta, FechaEliminado, Observaciones, PinHash
                         FROM Vendedores";
 
             if (!incluirEliminados)
@@ -33,7 +33,7 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"SELECT Id, Nombre, Apellido, NroDni, Email, Telefono, Direccion, FechaNacimiento, 
-                            Activo, FechaAlta, FechaEliminado, Observaciones, PinHash, IdSucursal
+                            Activo, FechaAlta, FechaEliminado, Observaciones, PinHash
                         FROM Vendedores
                         WHERE Id = @Id";
 
@@ -62,17 +62,14 @@ namespace Comercio.Infrastructure.Repositorios
 
             var sql = @"INSERT INTO Vendedores
                         (Nombre, Apellido, NroDni, Email, Telefono, Direccion,
-                         FechaNacimiento, Activo, FechaAlta, Observaciones,
-                         PinHash, IdSucursal)
+                         FechaNacimiento, Activo, FechaAlta, Observaciones, PinHash)
                         VALUES
                         (@Nombre, @Apellido, @NroDni, @Email, @Telefono, @Direccion,
-                         @FechaNacimiento, 1, @FechaAlta, @Observaciones,
-                         @PinHash, @IdSucursal);
+                         @FechaNacimiento, @Activo, @FechaAlta, @Observaciones, @PinHash);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
             vendedor.FechaAlta = DateTime.UtcNow;
-            vendedor.Activo = true;
 
             return await connection.ExecuteScalarAsync<int>(sql, vendedor);
         }
@@ -91,7 +88,7 @@ namespace Comercio.Infrastructure.Repositorios
                             FechaNacimiento = @FechaNacimiento,
                             Observaciones = @Observaciones,
                             PinHash = @PinHash,
-                            IdSucursal = @IdSucursal
+                            Activo = @Activo
                         WHERE Id = @Id";
 
             await connection.ExecuteAsync(sql, vendedor);

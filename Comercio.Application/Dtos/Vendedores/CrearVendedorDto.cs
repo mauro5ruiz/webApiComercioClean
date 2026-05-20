@@ -14,5 +14,6 @@ namespace Comercio.Application.Dtos.Vendedores
         public string? Observaciones { get; set; }
         public string PinHash { get; set; } = string.Empty;
         public int IdSucursal { get; set; }
+        public bool Activo { get; set; }
     }
 }
