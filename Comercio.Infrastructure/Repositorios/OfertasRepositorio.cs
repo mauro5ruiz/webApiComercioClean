@@ -89,7 +89,7 @@ namespace Comercio.Infrastructure.Repositorios
             await connection.ExecuteAsync(
                 @"UPDATE Ofertas
                   SET IdProducto = @IdProducto,
-                      TipoDescuentoId = @TipoDescuentoId,
+                      TipoDescuentoId = @TipoDescuento,
                       ValorDescuento = @ValorDescuento,
                       FechaInicio = @FechaInicio,
                       FechaFin = @FechaFin,
