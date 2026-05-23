@@ -110,7 +110,7 @@ namespace Comercio.Infrastructure.Repositorios
             return await connection.ExecuteScalarAsync<int>(
                 @"INSERT INTO Usuarios (Nombre, Apellido, Email, Usuario, ClaveHash, RolId, SucursalId, Telefono,
                                         Activo, DebeCambiarClave, FechaCreacion)
-                  VALUES (@Nombre, @Apellido, @Email, @UsuarioLogin, @ClaveHash, @RolId, @SucursalId, @Telefono, @Activo,
+                  VALUES (@Nombre, @Apellido, @Email, @UsuarioLogin, @ClaveHash, @RolId, null, @Telefono, @Activo,
                           @DebeCambiarClave, @FechaCreacion);
 
                   SELECT CAST(SCOPE_IDENTITY() as int);",
@@ -118,22 +118,27 @@ namespace Comercio.Infrastructure.Repositorios
             );
         }
 
-        public async Task<bool> Actualizar(Usuario usuario)
+        public async Task<bool> Actualizar(Usuario usuario, bool actualizarClave)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var filas = await connection.ExecuteAsync(
-                @"UPDATE Usuarios
-                  SET Nombre = @Nombre,
-                      Apellido = @Apellido,
-                      Email = @Email,
-                      RolId = @RolId,
-                      SucursalId = @SucursalId,
-                      Telefono = @Telefono,
-                      Activo = @Activo
-                  WHERE Id = @Id",
-                usuario
-            );
+            var sql = @"
+                UPDATE Usuarios
+                SET Nombre = @Nombre,
+                    Apellido = @Apellido,
+                    Email = @Email,
+                    Usuario = @UsuarioLogin,
+                    RolId = @RolId,
+                    Telefono = @Telefono,
+                    Activo = @Activo,
+                    DebeCambiarClave = @DebeCambiarClave";
+
+            if (actualizarClave)
+                sql += ", ClaveHash = @ClaveHash";
+
+            sql += " WHERE Id = @Id";
+
+            var filas = await connection.ExecuteAsync(sql, usuario);
 
             return filas > 0;
         }

@@ -64,14 +64,13 @@ namespace Comercio.Application.Servicios
                 throw new InvalidOperationException("Ya existe un usuario con ese email.");
 
             // Si NO es admin, debe tener sucursal
-            if (dto.RolId != 1 && dto.SucursalId == null)
-                throw new InvalidOperationException("Debe asignarse una sucursal al usuario.");
+            //if (dto.RolId != 1 && dto.SucursalId == null)
+            //    throw new InvalidOperationException("Debe asignarse una sucursal al usuario.");
 
             var hash = BCrypt.Net.BCrypt.HashPassword(dto.Clave);
 
             var usuario = _mapper.Map<Usuario>(dto);
             usuario.ClaveHash = hash;
-            usuario.Activo = true;
             usuario.FechaCreacion = DateTime.UtcNow;
 
             return await _usuariosRepository.Crear(usuario);
@@ -90,12 +89,17 @@ namespace Comercio.Application.Servicios
             if (existente == null)
                 throw new InvalidOperationException("Usuario no encontrado.");
 
-            if (dto.RolId != 1 && dto.SucursalId == null)
-                throw new InvalidOperationException("Debe asignarse una sucursal al usuario.");
+            //if (dto.RolId != 1 && dto.SucursalId == null)
+            //    throw new InvalidOperationException("Debe asignarse una sucursal al usuario.");
 
             _mapper.Map(dto, existente);
 
-            await _usuariosRepository.Actualizar(existente);
+            var actualizarClave = !string.IsNullOrWhiteSpace(dto.Clave);
+
+            if (actualizarClave)
+                existente.ClaveHash = BCrypt.Net.BCrypt.HashPassword(dto.Clave);
+
+            await _usuariosRepository.Actualizar(existente, actualizarClave);
         }
 
         public async Task CambiarClave(CambiarClaveDto dto)

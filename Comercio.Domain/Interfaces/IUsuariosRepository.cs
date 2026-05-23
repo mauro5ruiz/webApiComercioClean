@@ -11,7 +11,7 @@ namespace Comercio.Domain.Interfaces
         Task<bool> ExisteUsuario(string usuarioLogin);
         Task<bool> ExisteEmail(string email);
         Task<int> Crear(Usuario usuario);
-        Task<bool> Actualizar(Usuario usuario);
+        Task<bool> Actualizar(Usuario usuario, bool actualizarClave);
         Task<bool> CambiarClave(int usuarioId, string nuevoHash);
         Task<bool> ActualizarUltimoAcceso(int usuarioId);
         Task<bool> Activar(int usuarioId);
