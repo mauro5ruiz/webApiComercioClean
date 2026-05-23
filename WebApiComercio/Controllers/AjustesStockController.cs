@@ -15,6 +15,13 @@ namespace Comercio.Api.Controllers
             _ajusteStockServicio = ajusteStockServicio;
         }
 
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AjusteStockLecturaDto>>> Obtener()
+        {
+            var movimientosStock = await _ajusteStockServicio.ObtenerTodas();
+            return Ok(movimientosStock);
+        }
+
         [HttpPost]
         public async Task<IActionResult> AjustarStock([FromBody] AjustesStockDto dto)
         {

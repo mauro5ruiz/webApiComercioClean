@@ -1,16 +1,11 @@
-﻿using Comercio.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
-namespace Comercio.Domain.Entidades
+using Comercio.Domain.Enums;
+
+namespace Comercio.Application.Dtos.AjustesStock
 {
-    public class MovimientoStock
+    public class AjusteStockLecturaDto
     {
-        public int Id { get; set; }
         public int IdProducto { get; set; }
         public string Producto { get; set; }
         public TipoMovimientoStock IdTipoMovimientoStock { get; set; }

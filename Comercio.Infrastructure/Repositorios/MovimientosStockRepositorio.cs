@@ -50,6 +50,18 @@ namespace Comercio.Infrastructure.Repositorios
             return stock ?? 0;
         }
 
+        public async Task<IEnumerable<MovimientoStock>> ObtenerPorTipoMovimiento(int idTipoMovimiento)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT ms.IdProducto, p.Nombre as producto, ms.Cantidad, ms.Fecha, ms.Observaciones
+                  FROM MovimientosStock ms
+                  inner join Productos p on p.Id = ms.IdProducto
+                  WHERE ms.IdTipoMovimiento = @idTipoMovimiento ";
+
+            return await connection.QueryAsync<MovimientoStock>(sql, new { idTipoMovimiento });
+        }
+
         public async Task RegistrarMovimiento(MovimientoStock movimiento)
         {
             using var connection = new SqlConnection(_connectionString);

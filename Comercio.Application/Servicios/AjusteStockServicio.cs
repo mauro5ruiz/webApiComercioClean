@@ -1,4 +1,5 @@
-﻿using Comercio.Application.Interfaces;
+﻿using Comercio.Application.Dtos.AjustesStock;
+using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
@@ -41,5 +42,22 @@ namespace Comercio.Application.Servicios
 
             await _movimientosRepository.RegistrarMovimiento(movimiento);
         }
+
+        public async Task<IEnumerable<AjusteStockLecturaDto>> ObtenerTodas()
+        {
+            var ajustes = await _movimientosRepository.ObtenerPorTipoMovimiento((int)TipoMovimientoStock.AjusteStock);
+            return ajustes.Select(MapToDto);
+        }
+
+        private static AjusteStockLecturaDto MapToDto(MovimientoStock movimiento) => new()
+        {
+            IdProducto = movimiento.IdProducto,
+            Producto = movimiento.Producto,
+            IdTipoMovimientoStock = movimiento.IdTipoMovimientoStock,
+            Cantidad = movimiento.Cantidad,
+            IdReferencia = movimiento.IdReferencia,
+            Fecha = movimiento.Fecha,
+            Observaciones = movimiento.Observaciones
+        };
     }
 }
