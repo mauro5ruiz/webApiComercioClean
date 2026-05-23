@@ -21,7 +21,7 @@ namespace Comercio.Infrastructure.Repositorios
             var sql = @"SELECT IdProducto, IdTipoMovimiento as IdTipoMovimientoStock, Cantidad, IdReferencia, Fecha, Observaciones
                 FROM MovimientosStock
                 WHERE IdProducto = @idProducto
-                ORDER BY Fecha";
+                ORDER BY Fecha desc";
 
             return await connection.QueryAsync<MovimientoStock>(sql, new { idProducto });
         }
