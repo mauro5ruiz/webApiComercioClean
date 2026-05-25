@@ -34,7 +34,7 @@ namespace Comercio.Infrastructure.Repositorios
                         VALUES
                         (@IdDevolucionCompra, @IdFormaPago, @Importe, @Fecha);";
 
-            pago.Fecha = DateTime.UtcNow;
+            pago.Fecha = DateTime.Now;
 
             await connection.ExecuteAsync(sql, pago);
         }

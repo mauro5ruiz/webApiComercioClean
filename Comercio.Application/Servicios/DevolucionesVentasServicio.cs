@@ -76,7 +76,7 @@ namespace Comercio.Application.Servicios
             }
 
             devolucion.Total = total;
-            devolucion.Fecha = DateTime.UtcNow;
+            devolucion.Fecha = DateTime.Now;
             devolucion.Estado = "Activa";
 
             var idDevolucion = await _devolucionesRepository.Insertar(devolucion);
@@ -97,7 +97,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = detalle.IdProducto,
                     Cantidad = detalle.Cantidad, // vuelve al stock
                     IdTipoMovimientoStock = TipoMovimientoStock.DevolucionVenta,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = idDevolucion,
                     Observaciones = "Devolución de venta"
                 };
@@ -110,7 +110,7 @@ namespace Comercio.Application.Servicios
                 foreach (var pago in pagos)
                 {
                     pago.IdDevolucionVenta = idDevolucion;
-                    pago.FechaPago = DateTime.UtcNow;
+                    pago.FechaPago = DateTime.Now;
                     pago.Estado = "Activo";
 
                     await _pagosRepository.Insertar(pago);

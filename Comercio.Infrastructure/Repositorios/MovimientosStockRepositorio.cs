@@ -18,10 +18,15 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT IdProducto, IdTipoMovimiento as IdTipoMovimientoStock, Cantidad, IdReferencia, Fecha, Observaciones
+            var sql = @"
+                SELECT IdProducto,  IdTipoMovimiento AS IdTipoMovimientoStock, Cantidad, IdReferencia, Fecha, Observaciones
                 FROM MovimientosStock
                 WHERE IdProducto = @idProducto
-                ORDER BY Fecha desc";
+                ORDER BY Fecha DESC";
+
+            var movimientos = await connection.QueryAsync<MovimientoStock>(
+                sql,
+                new { idProducto });
 
             return await connection.QueryAsync<MovimientoStock>(sql, new { idProducto });
         }

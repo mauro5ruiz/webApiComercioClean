@@ -53,7 +53,7 @@ namespace Comercio.Application.Servicios
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "proveedores");
 
             var proveedor = _mapper.Map<Proveedor>(dto);
-            proveedor.FechaCreacion = DateTime.UtcNow;
+            proveedor.FechaCreacion = DateTime.Now;
             proveedor.UrlImagen = rutaImagen;
 
             var id = await _repository.Crear(proveedor);

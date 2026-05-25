@@ -71,7 +71,7 @@ namespace Comercio.Application.Servicios
 
             var usuario = _mapper.Map<Usuario>(dto);
             usuario.ClaveHash = hash;
-            usuario.FechaCreacion = DateTime.UtcNow;
+            usuario.FechaCreacion = DateTime.Now;
 
             return await _usuariosRepository.Crear(usuario);
         }

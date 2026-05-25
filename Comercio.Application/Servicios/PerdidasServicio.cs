@@ -55,7 +55,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = detalle.IdProducto,
                     Cantidad = -detalle.Cantidad,
                     IdTipoMovimientoStock = TipoMovimientoStock.Perdida,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = idPerdida,
                     Observaciones = "Perdida registrada"
                 };
@@ -83,7 +83,7 @@ namespace Comercio.Application.Servicios
                 IdProducto = detalle.IdProducto,
                 Cantidad = detalle.Cantidad, // devuelve el stock
                 IdTipoMovimientoStock = TipoMovimientoStock.AnulacionPerdida,
-                Fecha = DateTime.UtcNow,
+                Fecha = DateTime.Now,
                 IdReferencia = detalle.IdPerdida,
                 Observaciones = "Eliminación de detalle de pérdida"
             };
@@ -114,7 +114,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = detalle.IdProducto,
                     Cantidad = -diferencia,
                     IdTipoMovimientoStock = TipoMovimientoStock.AjustePerdida,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = detalle.IdPerdida,
                     Observaciones = "Ajuste de pérdida"
                 };
@@ -146,7 +146,7 @@ namespace Comercio.Application.Servicios
                         IdProducto = detalle.IdProducto,
                         Cantidad = -detalle.Cantidad,
                         IdTipoMovimientoStock = TipoMovimientoStock.Perdida,
-                        Fecha = DateTime.UtcNow,
+                        Fecha = DateTime.Now,
                         IdReferencia = idPerdida,
                         Observaciones = "Confirmación de pérdida"
                     };
@@ -167,7 +167,7 @@ namespace Comercio.Application.Servicios
                         IdProducto = detalle.IdProducto,
                         Cantidad = detalle.Cantidad,
                         IdTipoMovimientoStock = TipoMovimientoStock.AnulacionPerdida,
-                        Fecha = DateTime.UtcNow,
+                        Fecha = DateTime.Now,
                         IdReferencia = idPerdida,
                         Observaciones = "Anulación de pérdida"
                     };

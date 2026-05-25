@@ -146,7 +146,7 @@ namespace Comercio.Infrastructure.Repositorios
             {
                 Id = idVenta,
                 Estado = estado,
-                Fecha = DateTime.UtcNow
+                Fecha = DateTime.Now
             });
         }
     }

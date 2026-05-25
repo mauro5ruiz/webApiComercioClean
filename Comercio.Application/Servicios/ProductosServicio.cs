@@ -78,7 +78,7 @@ namespace Comercio.Application.Servicios
             var rutaImagen = await _archivoServicio.GuardarImagen(dto.Imagen, "productos");
 
             var producto = _mapper.Map<Producto>(dto);
-            producto.FechaAlta = DateTime.UtcNow;
+            producto.FechaAlta = DateTime.Now;
             producto.UrlImagen = rutaImagen;
 
             var idProducto = await _productosRepository.Crear(producto);
@@ -90,7 +90,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = idProducto,
                     Cantidad = dto.StockInicial,
                     IdTipoMovimientoStock = TipoMovimientoStock.CargaInicial,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = idProducto,
                     Observaciones = "Carga inicial de stock"
                 };

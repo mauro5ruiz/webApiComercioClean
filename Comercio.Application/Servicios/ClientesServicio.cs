@@ -95,7 +95,7 @@ namespace Comercio.Application.Servicios
                 Observaciones = dto.Observaciones,
                 CondicionIva = dto.CondicionIva,
                 Activo = dto.Activo,
-                FechaAlta = DateTime.UtcNow,
+                FechaAlta = DateTime.Now,
                 UrlImagen = rutaImagen
             };
 
@@ -178,7 +178,7 @@ namespace Comercio.Application.Servicios
                 Observaciones = dto.Observaciones,
                 CondicionIva = dto.CondicionIva,
                 Activo = dto.Activo,
-                FechaAlta = DateTime.UtcNow,
+                FechaAlta = DateTime.Now,
                 UrlImagen = rutaImagen
             };
 

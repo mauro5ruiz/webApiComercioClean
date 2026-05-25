@@ -36,7 +36,7 @@ namespace Comercio.Application.Servicios
                 IdProducto = idProducto,
                 Cantidad = diferencia,
                 IdTipoMovimientoStock = TipoMovimientoStock.AjusteStock,
-                Fecha = DateTime.UtcNow,
+                Fecha = DateTime.Now,
                 Observaciones = motivo
             };
 

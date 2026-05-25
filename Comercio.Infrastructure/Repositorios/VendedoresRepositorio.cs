@@ -69,7 +69,7 @@ namespace Comercio.Infrastructure.Repositorios
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
-            vendedor.FechaAlta = DateTime.UtcNow;
+            vendedor.FechaAlta = DateTime.Now;
 
             return await connection.ExecuteScalarAsync<int>(sql, vendedor);
         }
@@ -103,7 +103,7 @@ namespace Comercio.Infrastructure.Repositorios
                             FechaEliminado = @FechaEliminado
                         WHERE Id = @Id AND Activo = 1";
 
-            var filasAfectadas = await connection.ExecuteAsync(sql, new { Id = id, FechaEliminado = DateTime.UtcNow });
+            var filasAfectadas = await connection.ExecuteAsync(sql, new { Id = id, FechaEliminado = DateTime.Now });
 
             return filasAfectadas > 0;
         }

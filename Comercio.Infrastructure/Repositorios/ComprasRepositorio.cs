@@ -18,10 +18,14 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
+            desde = desde.Date;
+            hasta = hasta.Date.AddDays(1);
+
             var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
-                        FROM Compras
-                        WHERE Fecha BETWEEN @Desde AND @Hasta
-                        ORDER BY Fecha DESC;";
+                FROM Compras
+                WHERE Fecha >= @Desde
+                  AND Fecha < @Hasta
+                ORDER BY Fecha DESC;";
 
             return await connection.QueryAsync<Compra>(sql, new { Desde = desde, Hasta = hasta });
         }
@@ -90,7 +94,7 @@ namespace Comercio.Infrastructure.Repositorios
             {
                 Id = idCompra,
                 Estado = estado,
-                Fecha = DateTime.UtcNow
+                Fecha = DateTime.Now
             });
         }
 

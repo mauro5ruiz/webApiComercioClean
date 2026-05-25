@@ -86,7 +86,7 @@ namespace Comercio.Infrastructure.Repositorios
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
-            cliente.FechaAlta = DateTime.UtcNow;
+            cliente.FechaAlta = DateTime.Now;
             cliente.Activo = true;
 
             return await connection.ExecuteScalarAsync<int>(sql, cliente);
@@ -128,7 +128,7 @@ namespace Comercio.Infrastructure.Repositorios
                         WHERE Id = @Id AND Activo = 1";
 
             var filas = await connection.ExecuteAsync(sql,
-                new { Id = id, FechaBaja = DateTime.UtcNow });
+                new { Id = id, FechaBaja = DateTime.Now });
 
             return filas > 0;
         }

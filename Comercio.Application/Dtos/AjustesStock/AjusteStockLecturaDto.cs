@@ -11,7 +11,7 @@ namespace Comercio.Application.Dtos.AjustesStock
         public TipoMovimientoStock IdTipoMovimientoStock { get; set; }
         public int Cantidad { get; set; }
         public int IdReferencia { get; set; }
-        public DateTime Fecha { get; set; }
+        public DateTimeOffset Fecha { get; set; }
         public string Observaciones { get; set; }
     }
 }

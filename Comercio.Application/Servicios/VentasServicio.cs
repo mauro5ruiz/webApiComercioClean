@@ -88,7 +88,7 @@ namespace Comercio.Application.Servicios
             venta.Total = totalCalculado;
             venta.TotalPagado = 0;
             venta.Estado = "Activa";
-            venta.Fecha = DateTime.UtcNow;
+            venta.Fecha = DateTime.Now;
 
             var idVenta = await _ventasRepository.Insertar(venta);
 
@@ -110,7 +110,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = detalle.IdProducto,
                     Cantidad = -detalle.Cantidad,
                     IdTipoMovimientoStock = TipoMovimientoStock.Venta,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = idVenta,
                     Observaciones = "Venta realizada"
                 };
@@ -123,7 +123,7 @@ namespace Comercio.Application.Servicios
                 foreach (var pago in pagos)
                 {
                     pago.IdVenta = idVenta;
-                    pago.FechaPago = DateTime.UtcNow;
+                    pago.FechaPago = DateTime.Now;
                     pago.Estado = "Activo";
 
                     await _pagosRepository.Insertar(pago);
@@ -159,7 +159,7 @@ namespace Comercio.Application.Servicios
                     IdProducto = detalle.IdProducto,
                     Cantidad = detalle.Cantidad, // POSITIVO (devuelve stock)
                     IdTipoMovimientoStock = TipoMovimientoStock.AnulacionVenta,
-                    Fecha = DateTime.UtcNow,
+                    Fecha = DateTime.Now,
                     IdReferencia = idVenta,
                     Observaciones = "Anulación de venta"
                 };
@@ -213,7 +213,7 @@ namespace Comercio.Application.Servicios
                     IdFormaPago = idFormaPago,
                     Importe = montoAplicar,
                     Referencia = referencia,
-                    FechaPago = DateTime.UtcNow,
+                    FechaPago = DateTime.Now,
                     Estado = "Activo"
                 };
 

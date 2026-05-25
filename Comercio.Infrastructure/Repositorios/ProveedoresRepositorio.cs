@@ -77,7 +77,7 @@ namespace Comercio.Infrastructure.Repositorios
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
-            proveedor.FechaCreacion = DateTime.UtcNow;
+            proveedor.FechaCreacion = DateTime.Now;
             proveedor.Activo = true;
 
             return await connection.ExecuteScalarAsync<int>(sql, proveedor);
@@ -116,7 +116,7 @@ namespace Comercio.Infrastructure.Repositorios
                         WHERE Id = @Id AND Activo = 1";
 
             var filasAfectadas = await connection.ExecuteAsync(sql,
-                new { Id = id, FechaBaja = DateTime.UtcNow });
+                new { Id = id, FechaBaja = DateTime.Now });
 
             return filasAfectadas > 0;
         }

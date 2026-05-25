@@ -34,7 +34,7 @@ namespace Comercio.Infrastructure.Repositorios
                         VALUES
                         (@IdDevolucionVenta, @IdFormaPago, @Importe, @Referencia, @FechaPago, @Estado);";
 
-            pago.FechaPago = DateTime.UtcNow;
+            pago.FechaPago = DateTime.Now;
             pago.Estado = string.IsNullOrEmpty(pago.Estado) ? "Activo" : pago.Estado;
 
             await connection.ExecuteAsync(sql, pago);

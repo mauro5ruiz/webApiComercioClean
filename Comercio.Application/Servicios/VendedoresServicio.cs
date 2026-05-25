@@ -48,7 +48,7 @@ namespace Comercio.Application.Servicios
                 Direccion = dto.Direccion?.Trim(),
                 FechaNacimiento = dto.FechaNacimiento,
                 IdSucursal = dto.IdSucursal,
-                FechaAlta = DateTime.UtcNow,
+                FechaAlta = DateTime.Now,
                 Activo = dto.Activo,
                 Observaciones = dto.Observaciones?.Trim(),
                 PinHash = dto.PinHash?.Trim() ?? string.Empty
@@ -83,7 +83,7 @@ namespace Comercio.Application.Servicios
                 Direccion = dto.Direccion?.Trim(),
                 FechaNacimiento = dto.FechaNacimiento,
                 IdSucursal = dto.IdSucursal,
-                FechaAlta = DateTime.UtcNow,
+                FechaAlta = DateTime.Now,
                 Activo = dto.Activo,
                 Observaciones = dto.Observaciones?.Trim(),
                 PinHash = dto.PinHash?.Trim() ?? string.Empty
