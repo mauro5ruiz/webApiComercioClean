@@ -2,21 +2,32 @@
 using Comercio.Application.Dtos.Proveedores;
 using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
+using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Comercio.Application.Servicios
 {
     public class ProveedoresServicio : IProveedoresServicio
     {
         private readonly IProveedoresRepository _repository;
+        private readonly IFormasDePagoRepository _formasDePagoRepository;
+        private readonly IComprasRepostory _comprasRepository;
+        private readonly IComprasPagosRepository _pagosRepository;
+        private readonly ICreditoProveedorRepository _creditoProveedorRepository;
         private readonly IMapper _mapper;
         private readonly IArchivosServicio _archivoServicio;
 
-        public ProveedoresServicio(IProveedoresRepository repository, IMapper mapper, IArchivosServicio archivoService)
+        public ProveedoresServicio(IProveedoresRepository repository, IFormasDePagoRepository formasDePagoRepository, IComprasRepostory comprasRepository, 
+            ICreditoProveedorRepository creditoProveedorRepository, IComprasPagosRepository pagosRepository, IMapper mapper, IArchivosServicio archivoService)
         {
             _repository = repository;
             _mapper = mapper;
             _archivoServicio = archivoService;
+            _formasDePagoRepository = formasDePagoRepository;
+            _comprasRepository = comprasRepository;
+            _creditoProveedorRepository = creditoProveedorRepository;
+            _pagosRepository = pagosRepository;
         }
 
         public async Task<Proveedor?> ObtenerPorId(int id)
@@ -165,6 +176,149 @@ namespace Comercio.Application.Servicios
             return cuit.Replace("-", "")
                        .Replace(" ", "")
                        .Trim();
+        }
+
+        public async Task<ProveedorCuentaCorrienteDto> ObtenerCuentaCorriente(int idProveedor, DateTime? desde, DateTime? hasta)
+        {
+            if (idProveedor <= 0)
+                throw new ArgumentException("Id incorrecto.");
+
+            if (desde.HasValue && hasta.HasValue && desde.Value.Date > hasta.Value.Date)
+                throw new ArgumentException("La fecha desde no puede ser mayor que la fecha hasta.");
+
+            var proveedor = await _repository.ObtenerPorId(idProveedor);
+
+            if (proveedor is null)
+                throw new InvalidOperationException("Proveedor no encontrado.");
+
+            var compras = await _repository.ObtenerComprasCuentaCorriente(idProveedor, desde, hasta);
+
+            var formasDePagoBd = await _formasDePagoRepository.ObtenerTodas();
+
+            var comprasPendientes = compras
+                .Where(c => (int)c.Estado != 2 && c.SaldoPendiente > 0)
+                .Select(c => new ProveedorCompraPendienteDto
+                {
+                    IdCompra = c.Id,
+                    Fecha = c.Fecha,
+                    Comprobante = c.NumeroComprobante,
+                    Total = c.Total,
+                    Pagado = c.TotalPagado,
+                    SaldoPendiente = c.SaldoPendiente
+                })
+                .OrderBy(c => c.Fecha)
+                .ToList();
+
+            var movimientos = new List<ProveedorMovimientoDto>();
+
+            foreach (var compra in compras.OrderBy(c => c.Fecha))
+            {
+                movimientos.Add(new ProveedorMovimientoDto
+                {
+                    Tipo = "Compra",
+                    IdCompra = compra.Id,
+                    Fecha = compra.Fecha,
+                    Comprobante = compra.NumeroComprobante,
+                    Importe = compra.Total,
+                    TotalCompra = compra.Total,
+                    PagadoCompra = compra.TotalPagado,
+                    SaldoPendienteCompra = compra.SaldoPendiente
+                });
+
+                if (compra.Pagos is not null)
+                {
+                    foreach (var pago in compra.Pagos.OrderBy(p => p.FechaPago))
+                    {
+                        movimientos.Add(new ProveedorMovimientoDto
+                        {
+                            Tipo = "Pago",
+                            IdCompra = compra.Id,
+                            IdPago = pago.Id,
+                            Fecha = pago.FechaPago,
+                            Comprobante = compra.NumeroComprobante,
+                            FormaPago = formasDePagoBd.FirstOrDefault(f => f.Id == pago.IdFormaPago)?.Nombre,
+                            Referencia = pago.Referencia,
+                            Importe = pago.Importe
+                        });
+                    }
+                }
+            }
+
+            return new ProveedorCuentaCorrienteDto
+            {
+                IdProveedor = proveedor.Id,
+                Proveedor = proveedor.RazonSocial,
+                SaldoTotalPendiente = compras.Where(c => (int)c.Estado != 2).Sum(c => c.SaldoPendiente),
+                TotalComprado = compras.Where(c => (int)c.Estado != 2).Sum(c => c.Total),
+                TotalPagado = compras.Where(c => (int)c.Estado != 2).Sum(c => c.TotalPagado),
+                ComprasPendientes = comprasPendientes,
+                Movimientos = movimientos
+                    .OrderBy(m => m.Fecha)
+                    .ToList()
+            };
+        }
+
+        public async Task PagarProveedor(int idProveedor, decimal importe, int idFormaPago)
+        {
+            var compras = (await _comprasRepository.ObtenerPendientesPorProveedor(idProveedor))
+                .OrderBy(c => c.Fecha)
+                .ToList();
+
+            if (!compras.Any())
+                throw new Exception("El proveedor no tiene compras pendientes.");
+
+            decimal restante = importe;
+
+            var creditos = (await _creditoProveedorRepository.ObtenerPorProveedor(idProveedor))
+                .Where(c => c.Saldo > 0)
+                .OrderBy(c => c.Fecha)
+                .ToList();
+
+            foreach (var compra in compras)
+            {
+                if (compra.SaldoPendiente <= 0)
+                    continue;
+
+                decimal saldoCompra = compra.SaldoPendiente;
+
+                // 2️⃣ aplicar créditos primero
+                foreach (var credito in creditos)
+                {
+                    if (saldoCompra <= 0)
+                        break;
+
+                    if (credito.Saldo <= 0)
+                        continue;
+
+                    var montoCredito = Math.Min(saldoCompra, credito.Saldo);
+
+                    await _creditoProveedorRepository.ConsumirCredito(credito.Id, montoCredito);
+
+                    saldoCompra -= montoCredito;
+
+                    await _pagosRepository.RecalcularTotalPagado(compra.Id);
+                }
+
+                // 3️⃣ si aún queda saldo, usar dinero
+                if (saldoCompra > 0 && restante > 0)
+                {
+                    var montoPago = Math.Min(saldoCompra, restante);
+
+                    var pago = new CompraPago
+                    {
+                        IdCompra = compra.Id,
+                        IdFormaPago = idFormaPago,
+                        Importe = montoPago,
+                        Estado = EstadoComprobante.Activa
+                    };
+
+                    await _pagosRepository.Insertar(pago);
+
+                    await _pagosRepository.RecalcularTotalPagado(compra.Id);
+
+                    restante -= montoPago;
+                }
+            }
         }
     }
 }

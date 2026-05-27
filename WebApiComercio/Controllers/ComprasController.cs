@@ -107,19 +107,6 @@ namespace Comercio.Api.Controllers
             }
         }
 
-        [HttpPost("pagar-proveedor")]
-        public async Task<IActionResult> PagarProveedor([FromBody] PagarProveedorDto dto)
-        {
-            try
-            {
-                await _comprasServicio.PagarProveedor(dto.IdProveedor, dto.Importe, dto.IdFormaPago);
-                
-                return Ok(new { mensaje = "Pago registrado correctamente" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
+        
     }
 }

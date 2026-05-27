@@ -12,6 +12,7 @@ namespace Comercio.Domain.Interfaces
         Task EliminarPermanentemente(int id);
         Task<bool> DarDeBaja(int id);
         Task<bool> Restaurar(int id);
+        Task<List<Compra>> ObtenerComprasCuentaCorriente(int idProveedor, DateTime? desde, DateTime? hasta);
     }
 }
 

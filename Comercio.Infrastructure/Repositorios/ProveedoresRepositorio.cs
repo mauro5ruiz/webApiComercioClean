@@ -144,5 +144,69 @@ namespace Comercio.Infrastructure.Repositorios
 
             await connection.ExecuteAsync(sql, new { Id = id });
         }
+
+        public async Task<List<Compra>> ObtenerComprasCuentaCorriente(int idProveedor, DateTime? desde, DateTime? hasta)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    c.Id,
+                    c.NumeroComprobante,
+                    c.Fecha,
+                    c.IdProveedor,
+                    c.IdSucursal,
+                    c.Total,
+                    c.TotalPagado,
+                    c.SaldoPendiente,
+                    c.Estado,
+                    c.Observaciones,
+                    c.FechaAnulacion
+                FROM Compras c
+                WHERE c.IdProveedor = @IdProveedor
+                  AND (@Desde IS NULL OR c.Fecha >= @Desde)
+                  AND (@Hasta IS NULL OR c.Fecha < DATEADD(DAY, 1, @Hasta))
+                ORDER BY c.Fecha, c.Id;
+
+                SELECT 
+                    cp.Id,
+                    cp.IdCompra,
+                    cp.IdFormaPago,
+                    cp.Importe,
+                    cp.Cuotas,
+                    cp.Referencia,
+                    cp.FechaPago,
+                    cp.Estado,
+                    fp.Nombre AS NombreFormaPago
+                FROM CompraPagos cp
+                INNER JOIN Compras c ON c.Id = cp.IdCompra
+                LEFT JOIN FormasDePago fp ON fp.Id = cp.IdFormaPago
+                WHERE c.IdProveedor = @IdProveedor
+                  AND (@Desde IS NULL OR c.Fecha >= @Desde)
+                  AND (@Hasta IS NULL OR c.Fecha < DATEADD(DAY, 1, @Hasta))
+                ORDER BY cp.FechaPago, cp.Id;
+            ";
+
+            using var multi = await connection.QueryMultipleAsync(sql, new
+            {
+                IdProveedor = idProveedor,
+                Desde = desde?.Date,
+                Hasta = hasta?.Date
+            });
+
+            var compras = (await multi.ReadAsync<Compra>()).ToList();
+            var pagos = (await multi.ReadAsync<CompraPago>()).ToList();
+
+            var pagosPorCompra = pagos.GroupBy(p => p.IdCompra).ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var compra in compras)
+            {
+                compra.Pagos = pagosPorCompra.TryGetValue(compra.Id, out var pagosCompra)
+                    ? pagosCompra
+                    : new List<CompraPago>();
+            }
+
+            return compras;
+        }
     }
 }

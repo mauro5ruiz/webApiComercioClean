@@ -1,5 +1,7 @@
-﻿using Comercio.Application.Dtos.Proveedores;
+﻿using Comercio.Application.Dtos.Compras;
+using Comercio.Application.Dtos.Proveedores;
 using Comercio.Application.Interfaces;
+using Comercio.Application.Servicios;
 using Comercio.Domain.Entidades;
 using Microsoft.AspNetCore.Mvc;
 
@@ -96,6 +98,39 @@ namespace Comercio.Api.Controllers
                 return NotFound(new { error = "Proveedor no encontrado" });
 
             return NoContent();
+        }
+
+        [HttpGet("{id:int}/cuenta-corriente")]
+        public async Task<IActionResult> ObtenerCuentaCorriente([FromRoute] int id,[FromQuery] ObtenerCuentaCorriente ctCte)
+        {
+            try
+            {
+                var cuentaCorriente = await _proveedoresServicio.ObtenerCuentaCorriente(id, ctCte.Desde, ctCte.Hasta);
+                return Ok(cuentaCorriente);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("pagar-proveedor")]
+        public async Task<IActionResult> PagarProveedor([FromBody] PagarProveedorDto dto)
+        {
+            try
+            {
+                await _proveedoresServicio.PagarProveedor(dto.IdProveedor, dto.Importe, dto.IdFormaPago);
+
+                return Ok(new { mensaje = "Pago registrado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }
