@@ -1,5 +1,7 @@
 ﻿using Comercio.Application.Dtos.Compras;
+using Comercio.Application.Dtos.Proveedores;
 using Comercio.Application.Interfaces;
+using Comercio.Application.Servicios;
 using Comercio.Domain.Entidades;
 using Microsoft.AspNetCore.Mvc;
 
@@ -107,6 +109,19 @@ namespace Comercio.Api.Controllers
             }
         }
 
-        
+        [HttpPost("pagar")]
+        public async Task<IActionResult> Pagar([FromBody] PagarCompraDto dto)
+        {
+            try
+            {
+                await _comprasServicio.PagarCompra(dto.IdCompra, dto.Importe, dto.IdFormaPago);
+
+                return Ok(new { mensaje = "Pago registrado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

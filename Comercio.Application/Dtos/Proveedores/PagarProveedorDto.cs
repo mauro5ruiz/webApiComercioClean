@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Comercio.Application.Dtos.Compras
+namespace Comercio.Application.Dtos.Proveedores
 {
     public class PagarProveedorDto
     {

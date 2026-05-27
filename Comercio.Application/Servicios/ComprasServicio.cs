@@ -149,6 +149,42 @@ namespace Comercio.Application.Servicios
             await _comprasRepository.CambiarEstado(idCompra, 2);
         }
 
-        
+        public async Task PagarCompra(int idCompra, decimal importe, int idFormaPago)
+        {
+            if (importe <= 0)
+                throw new ArgumentException("El importe a guardar debe ser mayor que 0");
+
+            if (idCompra <= 0)
+                throw new ArgumentException("Id inválido.");
+
+            var compra = (await _comprasRepository.ObtenerPorId(idCompra));
+
+            if (compra == null)
+                throw new Exception("La compra no existe.");
+
+            if (compra.SaldoPendiente <= 0)
+                throw new Exception("La compra no tiene saldo pendiente para abonar.");
+
+            if (importe > compra.SaldoPendiente)
+                throw new ArgumentException($"El importe a abonar excede el total de la compra (${compra.SaldoPendiente}).");
+
+            decimal saldoCompra = compra.SaldoPendiente;
+
+            if (saldoCompra > 0 && importe > 0)
+            {
+                var montoPago = Math.Min(saldoCompra, importe);
+
+                var pago = new CompraPago
+                {
+                    IdCompra = compra.Id,
+                    IdFormaPago = idFormaPago,
+                    Importe = montoPago,
+                    Estado = EstadoComprobante.Activa
+                };
+
+                await _pagosRepository.Insertar(pago);
+                await _pagosRepository.RecalcularTotalPagado(compra.Id);
+            }
+        }
     }
 }

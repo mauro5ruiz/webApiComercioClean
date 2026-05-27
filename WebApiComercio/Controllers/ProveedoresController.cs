@@ -1,5 +1,4 @@
-﻿using Comercio.Application.Dtos.Compras;
-using Comercio.Application.Dtos.Proveedores;
+﻿using Comercio.Application.Dtos.Proveedores;
 using Comercio.Application.Interfaces;
 using Comercio.Application.Servicios;
 using Comercio.Domain.Entidades;
