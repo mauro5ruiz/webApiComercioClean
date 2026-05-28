@@ -10,16 +10,21 @@ namespace Comercio.Application.Servicios
         private readonly IComprasRepostory _comprasRepository;
         private readonly IDetalleComprasRepository _detalleRepository;
         private readonly IComprasPagosRepository _pagosRepository;
+        private readonly IDevolucionComprasRepository _devolucionesRepository;
+        private readonly IDevolucionCompraDetalleRepository _devolucionDetalleRepository;
         private readonly IProductosRepository _productosRepository;
         private readonly IMovimientosStockRepository _movimientosStockRepository;
         private readonly ICreditoProveedorRepository _creditoProveedorRepository;
 
         public ComprasServicio(IComprasRepostory comprasRepository,IDetalleComprasRepository detalleRepository,IComprasPagosRepository pagosRepository,
+            IDevolucionComprasRepository devolucionesRepository, IDevolucionCompraDetalleRepository devolucionDetalleRepository,
             IProductosRepository productosRepository,IMovimientosStockRepository movimientosStockRepository, ICreditoProveedorRepository creditoProveedorRepository)
         {
             _comprasRepository = comprasRepository;
             _detalleRepository = detalleRepository;
             _pagosRepository = pagosRepository;
+            _devolucionesRepository = devolucionesRepository;
+            _devolucionDetalleRepository = devolucionDetalleRepository;
             _productosRepository = productosRepository;
             _movimientosStockRepository = movimientosStockRepository;
             _creditoProveedorRepository = creditoProveedorRepository;
@@ -125,6 +130,13 @@ namespace Comercio.Application.Servicios
             var detalles = await _detalleRepository.ObtenerPorCompra(idCompra);
             var pagos = await _pagosRepository.ObtenerPorCompra(idCompra);
 
+            var pagosActivos = pagos
+                .Where(p => p.Estado == EstadoComprobante.Activa)
+                .ToList();
+
+            if (pagosActivos.Any())
+                await RegistrarDevolucionAutomaticaPorAnulacion(compra, detalles, pagosActivos);
+
             foreach (var detalle in detalles)
             {
                 var movimientoReverso = new MovimientoStock
@@ -140,13 +152,49 @@ namespace Comercio.Application.Servicios
                 await _movimientosStockRepository.RegistrarMovimiento(movimientoReverso);
             }
 
-            // Anulo los pagos
-            foreach (var pago in pagos)
-                await _pagosRepository.CambiarEstado(pago.Id, 2);
-
-            await _pagosRepository.RecalcularTotalPagado(idCompra);
-
             await _comprasRepository.CambiarEstado(idCompra, 2);
+        }
+
+        private async Task RegistrarDevolucionAutomaticaPorAnulacion(
+            Compra compra,
+            IEnumerable<DetalleCompra> detalles,
+            IEnumerable<CompraPago> pagosActivos)
+        {
+            var idDevolucion = await _devolucionesRepository.Insertar(new DevolucionCompra
+            {
+                IdCompra = compra.Id,
+                IdProveedor = compra.IdProveedor,
+                Fecha = DateTime.Now,
+                Motivo = $"Devolucion automatica por anulacion de compra {compra.NumeroComprobante}",
+                Total = compra.Total,
+                Estado = 1
+            });
+
+            foreach (var detalle in detalles)
+            {
+                await _devolucionDetalleRepository.Insertar(new DevolucionCompraDetalle
+                {
+                    IdDevolucionCompra = idDevolucion,
+                    IdProducto = detalle.IdProducto,
+                    Cantidad = detalle.Cantidad,
+                    PrecioUnitario = detalle.PrecioUnitario,
+                    Subtotal = detalle.Cantidad * detalle.PrecioUnitario
+                });
+            }
+
+            var totalPagado = pagosActivos.Sum(p => p.Importe);
+
+            if (totalPagado <= 0)
+                return;
+
+            await _creditoProveedorRepository.Insertar(new CreditoProveedor
+            {
+                IdProveedor = compra.IdProveedor,
+                IdDevolucionCompra = idDevolucion,
+                Importe = totalPagado,
+                Saldo = totalPagado,
+                Fecha = DateTime.Now
+            });
         }
 
         public async Task PagarCompra(int idCompra, decimal importe, int idFormaPago)

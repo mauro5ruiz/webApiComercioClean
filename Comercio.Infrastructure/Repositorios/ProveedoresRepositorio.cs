@@ -164,6 +164,7 @@ namespace Comercio.Infrastructure.Repositorios
                     c.FechaAnulacion
                 FROM Compras c
                 WHERE c.IdProveedor = @IdProveedor
+                  AND c.Estado = 1
                   AND (@Desde IS NULL OR c.Fecha >= @Desde)
                   AND (@Hasta IS NULL OR c.Fecha < DATEADD(DAY, 1, @Hasta))
                 ORDER BY c.Fecha, c.Id;

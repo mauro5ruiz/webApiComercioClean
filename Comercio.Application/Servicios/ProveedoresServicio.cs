@@ -192,6 +192,7 @@ namespace Comercio.Application.Servicios
                 throw new InvalidOperationException("Proveedor no encontrado.");
 
             var compras = await _repository.ObtenerComprasCuentaCorriente(idProveedor, desde, hasta);
+            var creditosProveedor = (await _creditoProveedorRepository.ObtenerPorProveedor(idProveedor)).ToList();
 
             var formasDePagoBd = await _formasDePagoRepository.ObtenerTodas();
 
@@ -244,11 +245,41 @@ namespace Comercio.Application.Servicios
                 }
             }
 
+            var creditosEnRango = creditosProveedor
+                .Where(c =>
+                    (!desde.HasValue || c.Fecha.Date >= desde.Value.Date) &&
+                    (!hasta.HasValue || c.Fecha.Date <= hasta.Value.Date))
+                .OrderBy(c => c.Fecha);
+
+            foreach (var credito in creditosEnRango)
+            {
+                movimientos.Add(new ProveedorMovimientoDto
+                {
+                    Tipo = "Credito",
+                    IdDevolucionCompra = credito.IdDevolucionCompra,
+                    Fecha = credito.Fecha,
+                    Comprobante = $"DEV-{credito.IdDevolucionCompra}",
+                    Referencia = "Credito a favor por devolucion/anulacion de compra",
+                    Importe = credito.Importe,
+                    SaldoCredito = credito.Saldo
+                });
+            }
+
+            var creditoDisponible = creditosProveedor
+                .Where(c => c.Saldo > 0)
+                .Sum(c => c.Saldo);
+
+            var saldoTotalPendiente = compras
+                .Where(c => (int)c.Estado != 2)
+                .Sum(c => c.SaldoPendiente);
+
             return new ProveedorCuentaCorrienteDto
             {
                 IdProveedor = proveedor.Id,
                 Proveedor = proveedor.RazonSocial,
-                SaldoTotalPendiente = compras.Where(c => (int)c.Estado != 2).Sum(c => c.SaldoPendiente),
+                SaldoTotalPendiente = saldoTotalPendiente,
+                CreditoDisponible = creditoDisponible,
+                SaldoNeto = saldoTotalPendiente - creditoDisponible,
                 TotalComprado = compras.Where(c => (int)c.Estado != 2).Sum(c => c.Total),
                 TotalPagado = compras.Where(c => (int)c.Estado != 2).Sum(c => c.TotalPagado),
                 ComprasPendientes = comprasPendientes,
