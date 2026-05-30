@@ -10,6 +10,8 @@ namespace Comercio.Application.Interfaces
 
         Task<int> Crear(CrearClienteDto proveedor);
         Task Actualizar(int id, ActualizarClienteDto proveedor);
+        Task<ClienteCuentaCorrienteDto> ObtenerCuentaCorriente(int idCliente, DateTime? desde, DateTime? hasta);
+        Task CobrarCliente(int idCliente, decimal importe, int idFormaPago, string referencia);
 
         Task<bool> DarDeBaja(int id);
         Task<bool> Restaurar(int id);

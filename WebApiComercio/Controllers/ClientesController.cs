@@ -99,5 +99,37 @@ namespace Comercio.Api.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("{id:int}/cuenta-corriente")]
+        public async Task<IActionResult> ObtenerCuentaCorriente([FromRoute] int id, [FromQuery] ObtenerCuentaCorrienteClienteDto dto)
+        {
+            try
+            {
+                var cuentaCorriente = await _clientesServicio.ObtenerCuentaCorriente(id, dto.Desde, dto.Hasta);
+                return Ok(cuentaCorriente);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("cobrar-cliente")]
+        public async Task<IActionResult> CobrarCliente([FromBody] CobrarClienteDto dto)
+        {
+            try
+            {
+                await _clientesServicio.CobrarCliente(dto.IdCliente, dto.Importe, dto.IdFormaPago, dto.Referencia);
+                return Ok(new { mensaje = "Cobro registrado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

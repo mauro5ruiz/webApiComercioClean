@@ -10,7 +10,7 @@ namespace Comercio.Domain.Interfaces
         Task<IEnumerable<Venta>> ObtenerPorCliente(int idCliente, bool soloPendientes = false);
         Task<IEnumerable<Venta>> ObtenerPendientes();
         Task<bool> Existe(int idVenta);
-
+        Task<IEnumerable<Venta>> ObtenerCuentaCorrientePorCliente(int idCliente);
         Task<int> Insertar(Venta venta);
         Task Actualizar(Venta venta);
         Task CambiarEstado(int idVenta, string estado);
