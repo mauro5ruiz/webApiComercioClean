@@ -57,9 +57,9 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"INSERT INTO DevolucionesVenta
-                        (IdVenta, NumeroComprobante, Fecha, IdCliente, IdSucursal, Total, Observaciones, Estado)
+                        (IdVenta, NumeroComprobante, Fecha, IdCliente, Total, Observaciones, Estado)
                         VALUES
-                        (@IdVenta, @NumeroComprobante, @Fecha, @IdCliente, @IdSucursal, @Total, @Observaciones, @Estado);
+                        (@IdVenta, @NumeroComprobante, @Fecha, @IdCliente, @Total, @Observaciones, @Estado);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 

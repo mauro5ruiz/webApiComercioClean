@@ -19,12 +19,17 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, 
-                               SaldoPendiente, Estado, Observaciones, FechaAnulacion
-                        FROM Ventas
-                        WHERE Fecha BETWEEN @Desde AND @Hasta
-                        ORDER BY Fecha DESC";
+                       SaldoPendiente, Estado, Observaciones, FechaAnulacion
+                FROM Ventas
+                WHERE Fecha >= @Desde
+                  AND Fecha < @Hasta
+                ORDER BY Fecha DESC";
 
-            return await connection.QueryAsync<Venta>(sql, new { Desde = desde, Hasta = hasta });
+            return await connection.QueryAsync<Venta>(sql, new
+            {
+                Desde = desde.Date,
+                Hasta = hasta.Date.AddDays(1)
+            });
         }
 
         public async Task<Venta?> ObtenerPorId(int id)

@@ -81,6 +81,7 @@ builder.Services.AddScoped<IDevolucionComprasRepository>(_ => new DevolucionComp
 builder.Services.AddScoped<IDevolucionCompraDetalleRepository>(_ => new DetalleDevolucionesComprasRepositorio(connectionString));
 builder.Services.AddScoped<IPagoDevolucionCompraRepository>(_ => new DevolucionCompraPagosRepositorio(connectionString));
 builder.Services.AddScoped<ICreditoProveedorRepository>(_ => new CreditoProveedorRepositorio(connectionString));
+builder.Services.AddScoped<ICreditoClienteRepository>(_ => new CreditoClienteRepositorio(connectionString));
 
 var app = builder.Build();
 

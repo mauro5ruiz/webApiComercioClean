@@ -62,7 +62,6 @@ namespace Comercio.Api.Controllers
                     IdVenta = request.IdVenta,
                     NumeroComprobante = request.NumeroComprobante,
                     IdCliente = request.IdCliente,
-                    IdSucursal = request.IdSucursal,
                     Observaciones = request.Observaciones
                 };
 

@@ -14,8 +14,6 @@ namespace Comercio.Domain.Entidades
 
         public int? IdCliente { get; set; }
 
-        public int? IdSucursal { get; set; }
-
         public decimal Total { get; set; }
 
         public string? Observaciones { get; set; }

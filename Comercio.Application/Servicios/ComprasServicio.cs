@@ -155,10 +155,7 @@ namespace Comercio.Application.Servicios
             await _comprasRepository.CambiarEstado(idCompra, 2);
         }
 
-        private async Task RegistrarDevolucionAutomaticaPorAnulacion(
-            Compra compra,
-            IEnumerable<DetalleCompra> detalles,
-            IEnumerable<CompraPago> pagosActivos)
+        private async Task RegistrarDevolucionAutomaticaPorAnulacion(Compra compra, IEnumerable<DetalleCompra> detalles, IEnumerable<CompraPago> pagosActivos)
         {
             var idDevolucion = await _devolucionesRepository.Insertar(new DevolucionCompra
             {
