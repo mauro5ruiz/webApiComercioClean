@@ -2,6 +2,7 @@
 using Comercio.Domain.Interfaces;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Hosting;
 
 namespace Comercio.Infrastructure.Repositorios
 {
@@ -28,6 +29,18 @@ namespace Comercio.Infrastructure.Repositorios
                 ORDER BY Fecha DESC;";
 
             return await connection.QueryAsync<Compra>(sql, new { Desde = desde, Hasta = hasta });
+        }
+
+        public async Task<IEnumerable<Compra>> ObtenerPorEstado(int idEstado)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+                FROM Compras
+                WHERE Estado = @idEstado
+                ORDER BY Fecha DESC;";
+
+            return await connection.QueryAsync<Compra>(sql, new { idEstado });
         }
 
         public async Task<Compra?> ObtenerPorId(int idCompra)

@@ -36,10 +36,7 @@ namespace Comercio.Application.Servicios
             _creditoProveedorRepository = creditoProveedorRepository;
         }
 
-        public async Task<int> RegistrarDevolucion(
-            DevolucionCompra devolucion,
-            IEnumerable<DevolucionCompraDetalle> detalles,
-            IEnumerable<PagoDevolucionCompra>? pagos = null)
+        public async Task<int> RegistrarDevolucion(DevolucionCompra devolucion,IEnumerable<DevolucionCompraDetalle> detalles,IEnumerable<PagoDevolucionCompra>? pagos = null)
         {
             if (devolucion is null)
                 throw new ArgumentNullException(nameof(devolucion));
@@ -106,8 +103,12 @@ namespace Comercio.Application.Servicios
                 };
 
                 await _movimientosStockRepository.RegistrarMovimiento(movimiento);
-            }
 
+                int? idDetalleCompra = await _detalleComprasRepository.ObtenerIdDetalleCompra(compra.Id, detalle.IdProducto);
+                if(idDetalleCompra.HasValue)
+                    await _detalleComprasRepository.AgregarCantidadDevuelto(idDetalleCompra.Value, detalle.IdProducto, detalle.Cantidad);
+            }
+            decimal totalPagado = 0;
             if (pagos != null && pagos.Any())
             {
                 foreach (var pago in pagos)
@@ -116,6 +117,7 @@ namespace Comercio.Application.Servicios
                     pago.Fecha = DateTime.Now;
 
                     await _pagosRepository.Insertar(pago);
+                    total += pago.Importe;
                 }
             }
             else
@@ -125,6 +127,20 @@ namespace Comercio.Application.Servicios
                     IdProveedor = devolucion.IdProveedor,
                     IdDevolucionCompra = idDevolucion,
                     Importe = total,
+                    Saldo = total,
+                    Fecha = DateTime.Now
+                };
+
+                await _creditoProveedorRepository.Insertar(credito);
+            }
+
+            if(totalPagado >= devolucion.Total)
+            {
+                var credito = new CreditoProveedor
+                {
+                    IdProveedor = devolucion.IdProveedor,
+                    IdDevolucionCompra = idDevolucion,
+                    Importe = devolucion.Total - totalPagado,
                     Saldo = total,
                     Fecha = DateTime.Now
                 };

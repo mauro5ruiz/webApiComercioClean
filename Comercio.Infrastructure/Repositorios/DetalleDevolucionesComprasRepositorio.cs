@@ -14,6 +14,19 @@ namespace Comercio.Infrastructure.Repositorios
             _connectionString = connectionString;
         }
 
+        public async Task<IEnumerable<DevolucionCompraDetalle>> ObtenerPorCompra(int idCompra)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT dd.Id, dd.IdDevolucionCompra, dd.IdProducto, dd.Cantidad, dd.PrecioUnitario, dd.Subtotal
+                        FROM DevolucionCompraDetalle dd
+                        INNER JOIN DevolucionCompra dc ON dc.Id = dd.IdDevolucionCompra
+                        WHERE dc.IdCompra = @IdCompra
+                          AND dc.Estado = 1;";
+
+            return await connection.QueryAsync<DevolucionCompraDetalle>(sql, new { IdCompra = idCompra });
+        }
+
         public async Task<IEnumerable<DevolucionCompraDetalle>> ObtenerPorDevolucion(int idDevolucion)
         {
             using var connection = new SqlConnection(_connectionString);

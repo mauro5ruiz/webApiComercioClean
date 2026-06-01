@@ -8,6 +8,8 @@ namespace Comercio.Domain.Entidades
 
         public int IdDevolucionCompra { get; set; }
 
+        public int? IdDetalleCompra { get; set; }
+
         public int IdProducto { get; set; }
 
         public int Cantidad { get; set; }

@@ -4,6 +4,8 @@ namespace Comercio.Domain.Interfaces
 {
     public interface IDevolucionCompraDetalleRepository
     {
+        Task<IEnumerable<DevolucionCompraDetalle>> ObtenerPorCompra(int idCompra);
+
         Task<IEnumerable<DevolucionCompraDetalle>> ObtenerPorDevolucion(int idDevolucion);
 
         Task Insertar(DevolucionCompraDetalle detalle);

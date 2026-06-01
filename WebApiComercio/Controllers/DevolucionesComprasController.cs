@@ -66,6 +66,7 @@ namespace Comercio.Api.Controllers
 
                 var detalles = request.Detalles.Select(d => new DevolucionCompraDetalle
                 {
+                    IdDetalleCompra = d.IdDetalleCompra,
                     IdProducto = d.IdProducto,
                     Cantidad = d.Cantidad
                 });

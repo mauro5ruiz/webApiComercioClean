@@ -5,6 +5,7 @@ namespace Comercio.Domain.Interfaces
     public interface IComprasRepostory
     {
         Task<IEnumerable<Compra>> ObtenerPorFechas(DateTime desde, DateTime hasta);
+        Task<IEnumerable<Compra>> ObtenerPorEstado(int idEstado);
         Task<Compra?> ObtenerPorId(int idCompra);
         Task<Compra?> ObtenerPorNroComprobante(string nroComprobante);
         Task<bool> Existe(int idVenta);

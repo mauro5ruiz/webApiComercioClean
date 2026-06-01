@@ -36,6 +36,21 @@ namespace Comercio.Api.Controllers
             }
         }
 
+        [HttpGet("estado")]
+        public async Task<IActionResult> ObtenerPorEstado([FromQuery] int idEstado)
+        {
+            try
+            {
+                var compras = await _comprasServicio.ObtenerPorEstado(idEstado);
+
+                return Ok(compras);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {

@@ -2,6 +2,7 @@
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
+using Microsoft.Extensions.Hosting;
 
 namespace Comercio.Application.Servicios
 {
@@ -36,6 +37,14 @@ namespace Comercio.Application.Servicios
                 throw new ArgumentException("La fecha 'desde' no puede ser mayor que 'hasta'.");
 
             return await _comprasRepository.ObtenerPorFechas(desde, hasta);
+        }
+
+        public async Task<IEnumerable<Compra>> ObtenerPorEstado(int idEstado)
+        {
+            if (idEstado <= 0)
+                throw new ArgumentException("Debe seleccionar un estado válido");
+
+            return await _comprasRepository.ObtenerPorEstado(idEstado);
         }
 
         public async Task<Compra?> ObtenerPorId(int idCompra)
