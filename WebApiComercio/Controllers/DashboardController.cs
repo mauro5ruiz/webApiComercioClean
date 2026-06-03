@@ -13,7 +13,9 @@ namespace Comercio.Api.Controllers
         private const int DiasOfertaPorVencer = 7;
 
         private readonly IVentasRepository _ventasRepository;
+        private readonly IDevolucionesVentasRepository _devolucionesVentasRepository;
         private readonly IComprasRepostory _comprasRepository;
+        private readonly IDevolucionComprasRepository _devolucionComprasRepository;
         private readonly IPerdidasRepository _perdidasRepository;
         private readonly IDetallePerdidasRepository _detallePerdidasRepository;
         private readonly IProductosRepository _productosRepository;
@@ -24,12 +26,15 @@ namespace Comercio.Api.Controllers
         private readonly IProveedoresRepository _proveedoresRepository;
         private readonly IVendedoresRepository _vendedoresRepository;
 
-        public DashboardController(IVentasRepository ventasRepository,IComprasRepostory comprasRepository,IPerdidasRepository perdidasRepository,
+        public DashboardController(IVentasRepository ventasRepository, IDevolucionesVentasRepository devolucionesVentasRepository,
+            IComprasRepostory comprasRepository, IDevolucionComprasRepository devolucionComprasRepository, IPerdidasRepository perdidasRepository,
             IDetallePerdidasRepository detallePerdidasRepository,IProductosRepository productosRepository,ICategoriasRepository categoriasRepository,
             IMarcasRepository marcasRepository,IOfertasRepository ofertasRepository,IClientesRepository clientesRepository,IProveedoresRepository proveedoresRepository,IVendedoresRepository vendedoresRepository)
         {
             _ventasRepository = ventasRepository;
+            _devolucionesVentasRepository = devolucionesVentasRepository;
             _comprasRepository = comprasRepository;
+            _devolucionComprasRepository = devolucionComprasRepository;
             _perdidasRepository = perdidasRepository;
             _detallePerdidasRepository = detallePerdidasRepository;
             _productosRepository = productosRepository;
@@ -55,10 +60,16 @@ namespace Comercio.Api.Controllers
                 var ventasMesActual = (await _ventasRepository.ObtenerPorFechas(inicioMesActual, finMesActual)).ToList();
                 var ventasMesAnterior = (await _ventasRepository.ObtenerPorFechas(inicioMesAnterior, finMesAnterior)).ToList();
                 var ventasHistoricas = (await _ventasRepository.ObtenerPorFechas(FechaHistoricaInicio, ahora)).ToList();
+                var devolucionesVentasMesActual = (await _devolucionesVentasRepository.ObtenerPorFechas(inicioMesActual, finMesActual)).ToList();
+                var devolucionesVentasMesAnterior = (await _devolucionesVentasRepository.ObtenerPorFechas(inicioMesAnterior, finMesAnterior)).ToList();
+                var devolucionesVentasHistoricas = (await _devolucionesVentasRepository.ObtenerPorFechas(FechaHistoricaInicio, ahora)).ToList();
 
                 var comprasMesActual = (await _comprasRepository.ObtenerPorFechas(inicioMesActual, finMesActual)).ToList();
                 var comprasMesAnterior = (await _comprasRepository.ObtenerPorFechas(inicioMesAnterior, finMesAnterior)).ToList();
                 var comprasHistoricas = (await _comprasRepository.ObtenerPorFechas(FechaHistoricaInicio, ahora)).ToList();
+                var devolucionesComprasMesActual = (await _devolucionComprasRepository.ObtenerPorFechas(inicioMesActual, finMesActual)).ToList();
+                var devolucionesComprasMesAnterior = (await _devolucionComprasRepository.ObtenerPorFechas(inicioMesAnterior, finMesAnterior)).ToList();
+                var devolucionesComprasHistoricas = (await _devolucionComprasRepository.ObtenerPorFechas(FechaHistoricaInicio, ahora)).ToList();
 
                 var perdidasMesActual = (await _perdidasRepository.ObtenerPorFechas(inicioMesActual, finMesActual)).ToList();
                 var perdidasMesAnterior = (await _perdidasRepository.ObtenerPorFechas(inicioMesAnterior, finMesAnterior)).ToList();
@@ -88,8 +99,12 @@ namespace Comercio.Api.Controllers
                     {
                         VentasMesActual = ventasMesActual.Where(v => !EsVentaAnulada(v.Estado)).Sum(v => v.Total),
                         VentasMesAnterior = ventasMesAnterior.Where(v => !EsVentaAnulada(v.Estado)).Sum(v => v.Total),
+                        DevolucionesVentasMesActual = devolucionesVentasMesActual.Where(EsDevolucionVentaActiva).Sum(d => d.Total),
+                        DevolucionesVentasMesAnterior = devolucionesVentasMesAnterior.Where(EsDevolucionVentaActiva).Sum(d => d.Total),
                         ComprasMesActual = comprasMesActual.Where(c => c.Estado != EstadoComprobante.Anulada).Sum(c => c.Total),
                         ComprasMesAnterior = comprasMesAnterior.Where(c => c.Estado != EstadoComprobante.Anulada).Sum(c => c.Total),
+                        DevolucionesComprasMesActual = devolucionesComprasMesActual.Where(EsDevolucionCompraActiva).Sum(d => d.Total),
+                        DevolucionesComprasMesAnterior = devolucionesComprasMesAnterior.Where(EsDevolucionCompraActiva).Sum(d => d.Total),
                         PerdidasMesActual = await CalcularMontoPerdidas(perdidasMesActual),
                         PerdidasMesAnterior = await CalcularMontoPerdidas(perdidasMesAnterior)
                     },
@@ -101,7 +116,9 @@ namespace Comercio.Api.Controllers
                         OfertasActivas = ofertas.Count(EsOfertaActivaVigente),
                         Perdidas = perdidasHistoricas.Count(p => p.IdEstado != (int)EstadoPerdida.Anulada),
                         Ventas = ventasHistoricas.Count(v => !EsVentaAnulada(v.Estado)),
+                        DevolucionesVentas = devolucionesVentasHistoricas.Count(EsDevolucionVentaActiva),
                         Compras = comprasHistoricas.Count(c => c.Estado != EstadoComprobante.Anulada),
+                        DevolucionesCompras = devolucionesComprasHistoricas.Count(EsDevolucionCompraActiva),
                         Clientes = clientes.Count,
                         Proveedores = proveedores.Count,
                         Vendedores = vendedores.Count
@@ -168,6 +185,12 @@ namespace Comercio.Api.Controllers
 
         private static bool EsVentaAnulada(string? estado) =>
             string.Equals(estado, "Anulada", StringComparison.OrdinalIgnoreCase);
+
+        private static bool EsDevolucionVentaActiva(Comercio.Domain.Entidades.DevolucionVenta devolucion) =>
+            string.Equals(devolucion.Estado, "Activa", StringComparison.OrdinalIgnoreCase);
+
+        private static bool EsDevolucionCompraActiva(Comercio.Domain.Entidades.DevolucionCompra devolucion) =>
+            devolucion.Estado == 1;
 
         private static bool EsOfertaActivaVigente(Comercio.Domain.Entidades.Oferta oferta)
         {

@@ -13,8 +13,12 @@ namespace Comercio.Application.Dtos.Dashboard
     {
         public decimal VentasMesActual { get; set; }
         public decimal VentasMesAnterior { get; set; }
+        public decimal DevolucionesVentasMesActual { get; set; }
+        public decimal DevolucionesVentasMesAnterior { get; set; }
         public decimal ComprasMesActual { get; set; }
         public decimal ComprasMesAnterior { get; set; }
+        public decimal DevolucionesComprasMesActual { get; set; }
+        public decimal DevolucionesComprasMesAnterior { get; set; }
         public decimal PerdidasMesActual { get; set; }
         public decimal PerdidasMesAnterior { get; set; }
     }
@@ -27,7 +31,9 @@ namespace Comercio.Application.Dtos.Dashboard
         public int OfertasActivas { get; set; }
         public int Perdidas { get; set; }
         public int Ventas { get; set; }
+        public int DevolucionesVentas { get; set; }
         public int Compras { get; set; }
+        public int DevolucionesCompras { get; set; }
         public int Clientes { get; set; }
         public int Proveedores { get; set; }
         public int Vendedores { get; set; }
