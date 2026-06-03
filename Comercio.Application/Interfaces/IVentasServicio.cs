@@ -5,6 +5,7 @@ namespace Comercio.Application.Interfaces
     public interface IVentasServicio
     {
         Task<IEnumerable<Venta>> ObtenerEntreFechas(DateTime desde, DateTime hasta);
+        Task<IEnumerable<Venta>> ObtenerPorEstado(int idEstado);
         Task<Venta?> ObtenerPorId(int idVenta);
         Task<int> CrearVenta(Venta venta, IEnumerable<DetalleVenta> detalles, IEnumerable<VentaPago>? pagos = null);
         Task AnularVenta(int idVenta);

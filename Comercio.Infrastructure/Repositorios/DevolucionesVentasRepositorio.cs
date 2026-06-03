@@ -18,8 +18,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, IdSucursal,
-                               Total, Observaciones, Estado
+            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, Total, Observaciones, Estado
                         FROM DevolucionesVenta
                         WHERE Fecha BETWEEN @Desde AND @Hasta
                         ORDER BY Fecha DESC";
@@ -31,8 +30,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, IdSucursal,
-                               Total, Observaciones, Estado
+            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, Total, Observaciones, Estado
                         FROM DevolucionesVenta
                         WHERE Id = @Id";
 
@@ -43,8 +41,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, IdSucursal,
-                               Total, Observaciones, Estado
+            var sql = @"SELECT Id, IdVenta, NumeroComprobante, Fecha, IdCliente, Total, Observaciones, Estado
                         FROM DevolucionesVenta
                         WHERE IdVenta = @IdVenta
                         ORDER BY Fecha DESC";

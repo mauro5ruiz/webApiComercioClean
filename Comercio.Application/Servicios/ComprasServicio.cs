@@ -2,7 +2,6 @@
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
-using Microsoft.Extensions.Hosting;
 
 namespace Comercio.Application.Servicios
 {

@@ -1,5 +1,6 @@
 ﻿using Comercio.Application.Dtos.Ventas;
 using Comercio.Application.Interfaces;
+using Comercio.Application.Servicios;
 using Comercio.Domain.Entidades;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +26,21 @@ namespace Comercio.Api.Controllers
                     return BadRequest(new { Error = "La fecha 'desde' no puede ser mayor que 'hasta'" });
 
                 var ventas = await _ventasServicio.ObtenerEntreFechas(desde, hasta);
+
+                return Ok(ventas);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        [HttpGet("estado")]
+        public async Task<IActionResult> ObtenerPorEstado([FromQuery] int idEstado)
+        {
+            try
+            {
+                var ventas = await _ventasServicio.ObtenerPorEstado(idEstado);
 
                 return Ok(ventas);
             }

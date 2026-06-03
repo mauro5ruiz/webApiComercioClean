@@ -32,6 +32,18 @@ namespace Comercio.Infrastructure.Repositorios
             });
         }
 
+        public async Task<IEnumerable<Venta>> ObtenerPorEstado(string estado)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+                FROM Ventas
+                WHERE Estado = @estado
+                ORDER BY Fecha DESC;";
+
+            return await connection.QueryAsync<Venta>(sql, new { estado });
+        }
+
         public async Task<Venta?> ObtenerPorId(int id)
         {
             using var connection = new SqlConnection(_connectionString);

@@ -12,7 +12,7 @@ namespace Comercio.Domain.Entidades
 
         public DateTime Fecha { get; set; }
 
-        public int? IdCliente { get; set; }
+        public int IdCliente { get; set; }
 
         public decimal Total { get; set; }
 

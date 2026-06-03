@@ -62,6 +62,15 @@ namespace Comercio.Application.Servicios
             return venta;
         }
 
+        public async Task<IEnumerable<Venta>> ObtenerPorEstado(int idEstado)
+        {
+            if (idEstado <= 0)
+                throw new ArgumentException("Debe seleccionar un estado válido");
+
+            string estado = idEstado == 1 ? EstadoComprobante.Activa.ToString() : EstadoComprobante.Anulada.ToString();
+            return await _ventasRepository.ObtenerPorEstado(estado);
+        }
+
         public async Task<int> CrearVenta(Venta venta, IEnumerable<DetalleVenta> detalles, IEnumerable<VentaPago>? pagos = null)
         {
             if (venta is null)

@@ -16,15 +16,9 @@ namespace Comercio.Application.Servicios
         private readonly IMovimientosStockRepository _movimientosStockRepository;
         private readonly ICreditoProveedorRepository _creditoProveedorRepository;
 
-        public DevolucionesComprasServicio(
-            IDevolucionComprasRepository devolucionesRepository,
-            IDevolucionCompraDetalleRepository detalleRepository,
-            IPagoDevolucionCompraRepository pagosRepository,
-            IComprasRepostory comprasRepository,
-            IDetalleComprasRepository detalleComprasRepository,
-            IProductosRepository productosRepository,
-            IMovimientosStockRepository movimientosStockRepository,
-            ICreditoProveedorRepository creditoProveedorRepository)
+        public DevolucionesComprasServicio(IDevolucionComprasRepository devolucionesRepository, IDevolucionCompraDetalleRepository detalleRepository,
+            IPagoDevolucionCompraRepository pagosRepository, IComprasRepostory comprasRepository, IDetalleComprasRepository detalleComprasRepository,
+            IProductosRepository productosRepository, IMovimientosStockRepository movimientosStockRepository, ICreditoProveedorRepository creditoProveedorRepository)
         {
             _devolucionesRepository = devolucionesRepository;
             _detalleRepository = detalleRepository;
