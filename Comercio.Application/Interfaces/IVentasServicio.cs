@@ -8,7 +8,7 @@ namespace Comercio.Application.Interfaces
         Task<IEnumerable<Venta>> ObtenerPorEstado(int idEstado);
         Task<Venta?> ObtenerPorId(int idVenta);
         Task<int> CrearVenta(Venta venta, IEnumerable<DetalleVenta> detalles, IEnumerable<VentaPago>? pagos = null);
-        Task AnularVenta(int idVenta);
+        Task AnularVenta(int idVenta, IEnumerable<DevolucionVentaPago>? pagos = null);
         Task<IEnumerable<Venta>> ObtenerPendientesPorCliente(int idCliente);
         Task CobrarCliente(int idCliente, decimal importe, int idFormaPago, string referencia);
     }

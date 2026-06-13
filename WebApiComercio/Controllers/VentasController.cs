@@ -108,11 +108,18 @@ namespace Comercio.Api.Controllers
         }
 
         [HttpPut("anular/{id}")]
-        public async Task<IActionResult> AnularVenta(int id)
+        public async Task<IActionResult> AnularVenta(int id, [FromBody] AnularVentaDto? request)
         {
             try
             {
-                await _ventasServicio.AnularVenta(id);
+                var pagos = request?.Pagos?.Select(p => new DevolucionVentaPago
+                {
+                    IdFormaPago = p.IdFormaPago,
+                    Importe = p.Importe,
+                    Referencia = p.Referencia
+                });
+
+                await _ventasServicio.AnularVenta(id, pagos);
 
                 return Ok(new { Mensaje = "Venta anulada correctamente"  });
             }

@@ -12,7 +12,7 @@ namespace Comercio.Application.Servicios
         private const string EstadoVentaAnulada = "Anulada";
         private const string EstadoPagoActivo = "Activo";
         private const string EstadoPagoAnulado = "Anulado";
-        private const string ObservacionNotaCreditoConsumidorFinal = "Generada por devolución de venta a Consumidor Final";
+        private const string ObservacionNotaCreditoConsumidorFinal = "Generada por devolucion de venta a Consumidor Final";
 
         private readonly IVentasRepository _ventasRepository;
         private readonly IDetalleVentasRepostory _detalleRepository;
@@ -60,7 +60,7 @@ namespace Comercio.Application.Servicios
         public async Task<Venta?> ObtenerPorId(int idVenta)
         {
             if (idVenta <= 0)
-                throw new ArgumentException("Id inválido.");
+                throw new ArgumentException("Id invalido.");
 
             var venta = await _ventasRepository.ObtenerPorId(idVenta);
 
@@ -76,7 +76,7 @@ namespace Comercio.Application.Servicios
         public async Task<IEnumerable<Venta>> ObtenerPorEstado(int idEstado)
         {
             if (idEstado <= 0)
-                throw new ArgumentException("Debe seleccionar un estado válido");
+                throw new ArgumentException("Debe seleccionar un estado valido");
 
             var estado = idEstado == 1 ? EstadoComprobante.Activa.ToString() : EstadoComprobante.Anulada.ToString();
             return await _ventasRepository.ObtenerPorEstado(estado);
@@ -122,10 +122,10 @@ namespace Comercio.Application.Servicios
             venta.Estado = EstadoVentaActiva;
             venta.Fecha = DateTime.Now;
 
-            if(venta.IdCliente <= 0)
+            if (venta.IdCliente <= 0)
             {
                 var pagado = pagos?.Sum(p => p.Importe);
-                if(!pagado.HasValue || pagado.Value < totalCalculado)
+                if (!pagado.HasValue || pagado.Value < totalCalculado)
                     throw new ArgumentException("Para Consumidor final la venta debe quedar pagada en su totalidad.");
             }
 
@@ -144,7 +144,7 @@ namespace Comercio.Application.Servicios
                 detalle.IdVenta = idVenta;
                 await _detalleRepository.Insertar(detalle);
 
-                var movimiento = new MovimientoStock
+                await _movimientosStockRepository.RegistrarMovimiento(new MovimientoStock
                 {
                     IdProducto = detalle.IdProducto,
                     Cantidad = -detalle.Cantidad,
@@ -152,9 +152,7 @@ namespace Comercio.Application.Servicios
                     Fecha = DateTime.Now,
                     IdReferencia = idVenta,
                     Observaciones = "Venta realizada"
-                };
-
-                await _movimientosStockRepository.RegistrarMovimiento(movimiento);
+                });
             }
 
             if (pagos != null && pagos.Any())
@@ -174,10 +172,10 @@ namespace Comercio.Application.Servicios
             return idVenta;
         }
 
-        public async Task AnularVenta(int idVenta)
+        public async Task AnularVenta(int idVenta, IEnumerable<DevolucionVentaPago>? pagos = null)
         {
             if (idVenta <= 0)
-                throw new ArgumentException("Id inválido.");
+                throw new ArgumentException("Id invalido.");
 
             var venta = await _ventasRepository.ObtenerPorId(idVenta);
 
@@ -185,42 +183,43 @@ namespace Comercio.Application.Servicios
                 throw new ArgumentException("La venta no existe.");
 
             if (venta.Estado == EstadoVentaAnulada)
-                throw new InvalidOperationException("La venta ya está anulada.");
+                throw new InvalidOperationException("La venta ya esta anulada.");
 
             var detalles = (await _detalleRepository.ObtenerPorVenta(idVenta)).ToList();
-            var pagos = (await _pagosRepository.ObtenerPorVenta(idVenta)).ToList();
-            var pagosActivos = pagos
-                .Where(p => p.Estado == EstadoPagoActivo)
-                .ToList();
+            var pagosVenta = (await _pagosRepository.ObtenerPorVenta(idVenta)).ToList();
+            var pagosActivosVenta = pagosVenta.Where(p => p.Estado == EstadoPagoActivo).ToList();
+            var pagosDevolucion = pagos?.ToList() ?? new List<DevolucionVentaPago>();
 
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
-            await RegistrarDevolucionAutomaticaPorAnulacion(venta, detalles, pagosActivos);
+            await RegistrarDevolucionAutomaticaPorAnulacion(venta, detalles, pagosActivosVenta, pagosDevolucion);
 
             foreach (var detalle in detalles)
             {
-                var movimientoReverso = new MovimientoStock
+                await _movimientosStockRepository.RegistrarMovimiento(new MovimientoStock
                 {
                     IdProducto = detalle.IdProducto,
                     Cantidad = detalle.Cantidad,
                     IdTipoMovimientoStock = TipoMovimientoStock.AnulacionVenta,
                     Fecha = DateTime.Now,
                     IdReferencia = idVenta,
-                    Observaciones = "Anulación de venta"
-                };
-
-                await _movimientosStockRepository.RegistrarMovimiento(movimientoReverso);
+                    Observaciones = "Anulacion de venta"
+                });
             }
 
-            foreach (var pago in pagos)
-                await _pagosRepository.CambiarEstado(pago.Id, EstadoPagoAnulado);
+            foreach (var pagoVenta in pagosVenta)
+                await _pagosRepository.CambiarEstado(pagoVenta.Id, EstadoPagoAnulado);
 
             await _ventasRepository.CambiarEstado(idVenta, EstadoVentaAnulada);
 
             scope.Complete();
         }
 
-        private async Task RegistrarDevolucionAutomaticaPorAnulacion(Venta venta, IEnumerable<DetalleVenta> detalles, IEnumerable<VentaPago> pagosActivos)
+        private async Task RegistrarDevolucionAutomaticaPorAnulacion(
+            Venta venta,
+            IEnumerable<DetalleVenta> detalles,
+            IEnumerable<VentaPago> pagosActivos,
+            IEnumerable<DevolucionVentaPago> pagosDevolucion)
         {
             var idDevolucion = await _devolucionesRepository.Insertar(new DevolucionVenta
             {
@@ -249,6 +248,37 @@ namespace Comercio.Application.Servicios
             var totalPagado = pagosActivos.Sum(p => p.Importe);
 
             if (totalPagado <= 0)
+            {
+                if (pagosDevolucion.Any())
+                    throw new InvalidOperationException("No se pueden registrar pagos de devolucion si la venta no tiene pagos activos.");
+
+                return;
+            }
+
+            var totalDevueltoEnPagos = 0m;
+
+            foreach (var pago in pagosDevolucion)
+            {
+                if (pago.IdFormaPago <= 0)
+                    throw new InvalidOperationException("La forma de pago de la devolucion es obligatoria.");
+
+                if (pago.Importe <= 0)
+                    throw new InvalidOperationException("Los pagos de la devolucion deben ser mayores a cero.");
+
+                pago.IdDevolucionVenta = idDevolucion;
+                pago.FechaPago = DateTime.Now;
+                pago.Estado = EstadoPagoActivo;
+
+                await _devolucionPagosRepository.Insertar(pago);
+                totalDevueltoEnPagos += pago.Importe;
+            }
+
+            if (totalDevueltoEnPagos > totalPagado)
+                throw new InvalidOperationException("Los pagos de la devolucion no pueden superar el total pagado de la venta.");
+
+            var saldoCreditoONota = totalPagado - totalDevueltoEnPagos;
+
+            if (saldoCreditoONota <= 0)
                 return;
 
             if (EsConsumidorFinal(venta.IdCliente))
@@ -256,9 +286,7 @@ namespace Comercio.Application.Servicios
                 var notaExistente = await _notasCreditoRepository.ObtenerPorDevolucion(idDevolucion);
 
                 if (notaExistente is null)
-                {
-                    await InsertarNotaCredito(idDevolucion, totalPagado);
-                }
+                    await InsertarNotaCredito(idDevolucion, saldoCreditoONota);
 
                 return;
             }
@@ -267,8 +295,8 @@ namespace Comercio.Application.Servicios
             {
                 IdCliente = venta.IdCliente,
                 IdDevolucionVenta = idDevolucion,
-                Importe = totalPagado,
-                Saldo = totalPagado,
+                Importe = saldoCreditoONota,
+                Saldo = saldoCreditoONota,
                 Fecha = DateTime.Now
             });
         }
@@ -292,7 +320,7 @@ namespace Comercio.Application.Servicios
         public async Task<IEnumerable<Venta>> ObtenerPendientesPorCliente(int idCliente)
         {
             if (idCliente <= 0)
-                throw new ArgumentException("Cliente inválido.");
+                throw new ArgumentException("Cliente invalido.");
 
             return await _ventasRepository.ObtenerPorCliente(idCliente, true);
         }
@@ -300,7 +328,7 @@ namespace Comercio.Application.Servicios
         public async Task CobrarCliente(int idCliente, decimal importe, int idFormaPago, string referencia)
         {
             if (idCliente <= 0)
-                throw new ArgumentException("Cliente inválido.");
+                throw new ArgumentException("Cliente invalido.");
 
             if (importe <= 0)
                 throw new ArgumentException("El importe debe ser mayor a cero.");
@@ -320,7 +348,7 @@ namespace Comercio.Application.Servicios
                 var saldo = venta.SaldoPendiente;
                 var montoAplicar = Math.Min(saldo, montoRestante);
 
-                var pago = new VentaPago
+                await _pagosRepository.Insertar(new VentaPago
                 {
                     IdVenta = venta.Id,
                     IdFormaPago = idFormaPago,
@@ -328,11 +356,9 @@ namespace Comercio.Application.Servicios
                     Referencia = referencia,
                     FechaPago = DateTime.Now,
                     Estado = EstadoPagoActivo
-                };
+                });
 
-                await _pagosRepository.Insertar(pago);
                 await _pagosRepository.RecalcularTotalPagado(venta.Id);
-
                 montoRestante -= montoAplicar;
             }
         }

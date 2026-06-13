@@ -10,7 +10,7 @@ namespace Comercio.Application.Servicios
     {
         private const string EstadoActiva = "Activa";
         private const string EstadoPagoActivo = "Activo";
-        private const string ObservacionNotaCreditoConsumidorFinal = "Generada por devolución de venta a Consumidor Final";
+        private const string ObservacionNotaCreditoConsumidorFinal = "Generada por devolucion de venta a Consumidor Final";
 
         private readonly IDevolucionesVentasRepository _devolucionesRepository;
         private readonly IDetalleDevolucionesVentasRepository _detalleRepository;
@@ -49,10 +49,10 @@ namespace Comercio.Application.Servicios
             if (devolucion is null)
                 throw new ArgumentNullException(nameof(devolucion));
 
-            var detallesList = detalles?.ToList() ?? throw new ArgumentException("La devolución debe tener al menos un producto.");
+            var detallesList = detalles?.ToList() ?? throw new ArgumentException("La devolucion debe tener al menos un producto.");
 
             if (!detallesList.Any())
-                throw new ArgumentException("La devolución debe tener al menos un producto.");
+                throw new ArgumentException("La devolucion debe tener al menos un producto.");
 
             var venta = await _ventasRepository.ObtenerPorId(devolucion.IdVenta);
 
@@ -66,7 +66,7 @@ namespace Comercio.Application.Servicios
 
             var detallesVenta = (await _detalleVentasRepository.ObtenerPorVenta(venta.Id)).ToList();
 
-            decimal total = 0;
+            decimal totalDevuelto = 0;
 
             foreach (var detalle in detallesList)
             {
@@ -79,15 +79,14 @@ namespace Comercio.Application.Servicios
                     throw new InvalidOperationException("La cantidad a devolver debe ser mayor a cero.");
 
                 if (detalle.Cantidad > detalleVenta.Cantidad)
-                    throw new InvalidOperationException("No se puede devolver más cantidad de la vendida.");
+                    throw new InvalidOperationException("No se puede devolver mas cantidad de la vendida.");
 
                 detalle.PrecioUnitario = detalleVenta.PrecioUnitario;
                 detalle.Subtotal = detalle.Cantidad * detalle.PrecioUnitario;
-
-                total += detalle.Subtotal;
+                totalDevuelto += detalle.Subtotal;
             }
 
-            devolucion.Total = total;
+            devolucion.Total = totalDevuelto;
             devolucion.Fecha = DateTime.Now;
             devolucion.Estado = EstadoActiva;
 
@@ -98,7 +97,6 @@ namespace Comercio.Application.Servicios
             foreach (var detalle in detallesList)
             {
                 detalle.IdDevolucionVenta = idDevolucion;
-
                 await _detalleRepository.Insertar(detalle);
 
                 var producto = await _productosRepository.ObtenerPorId(detalle.IdProducto);
@@ -106,44 +104,58 @@ namespace Comercio.Application.Servicios
                 if (producto is null)
                     throw new InvalidOperationException($"Producto {detalle.IdProducto} no existe.");
 
-                var movimiento = new MovimientoStock
+                await _movimientosStockRepository.RegistrarMovimiento(new MovimientoStock
                 {
                     IdProducto = detalle.IdProducto,
                     Cantidad = detalle.Cantidad,
                     IdTipoMovimientoStock = TipoMovimientoStock.DevolucionVenta,
                     Fecha = DateTime.Now,
                     IdReferencia = idDevolucion,
-                    Observaciones = "Devolución de venta"
-                };
-
-                await _movimientosStockRepository.RegistrarMovimiento(movimiento);
+                    Observaciones = "Devolucion de venta"
+                });
 
                 var idDetalleVenta = await _detalleVentasRepository.ObtenerIdDetalleVenta(venta.Id, detalle.IdProducto);
                 if (idDetalleVenta.HasValue)
                     await _detalleVentasRepository.AgregarCantidadDevuelto(idDetalleVenta.Value, detalle.IdProducto, detalle.Cantidad);
             }
 
-            decimal totalPagado = 0;
-            if (pagos != null)
+            var pagosDevolucion = pagos?.ToList() ?? new List<DevolucionVentaPago>();
+            var totalCobradoVenta = venta.TotalPagado;
+            var totalPagadoEnDevolucion = 0m;
+
+            if (totalCobradoVenta <= 0)
             {
-                foreach (var pago in pagos)
+                if (pagosDevolucion.Any())
+                    throw new InvalidOperationException("No se pueden registrar pagos de devolucion si la venta no tiene pagos cobrados.");
+            }
+            else
+            {
+                foreach (var pago in pagosDevolucion)
                 {
+                    if (pago.IdFormaPago <= 0)
+                        throw new InvalidOperationException("La forma de pago de la devolucion es obligatoria.");
+
+                    if (pago.Importe <= 0)
+                        throw new InvalidOperationException("Los pagos de la devolucion deben ser mayores a cero.");
+
                     pago.IdDevolucionVenta = idDevolucion;
                     pago.FechaPago = DateTime.Now;
                     pago.Estado = EstadoPagoActivo;
 
                     await _pagosRepository.Insertar(pago);
-                    totalPagado += pago.Importe;
+                    totalPagadoEnDevolucion += pago.Importe;
                 }
             }
 
-            if (totalPagado > devolucion.Total)
-                throw new InvalidOperationException("Los pagos de la devolución no pueden superar el total devuelto.");
+            var maximoRefundable = Math.Min(totalDevuelto, totalCobradoVenta);
 
-            var saldoPendiente = devolucion.Total - totalPagado;
+            if (totalPagadoEnDevolucion > maximoRefundable)
+                throw new InvalidOperationException("Los pagos de la devolucion no pueden superar lo efectivamente cobrado ni el total devuelto.");
 
-            if (saldoPendiente > 0)
-                await GenerarCreditoONotaCredito(devolucion.IdCliente, idDevolucion, saldoPendiente);
+            var saldoCreditoONota = maximoRefundable - totalPagadoEnDevolucion;
+
+            if (saldoCreditoONota > 0)
+                await GenerarCreditoONotaCredito(devolucion.IdCliente, idDevolucion, saldoCreditoONota);
 
             scope.Complete();
             return idDevolucion;
@@ -152,7 +164,7 @@ namespace Comercio.Application.Servicios
         public async Task<DevolucionVenta?> ObtenerPorId(int id)
         {
             if (id <= 0)
-                throw new ArgumentException("Id inválido.");
+                throw new ArgumentException("Id invalido.");
 
             var devolucion = await _devolucionesRepository.ObtenerPorId(id);
 
@@ -186,7 +198,6 @@ namespace Comercio.Application.Servicios
                     return;
 
                 await InsertarNotaCredito(idDevolucionVenta, importe);
-
                 return;
             }
 
