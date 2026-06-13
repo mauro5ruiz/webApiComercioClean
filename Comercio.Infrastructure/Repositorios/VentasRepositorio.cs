@@ -131,7 +131,7 @@ namespace Comercio.Infrastructure.Repositorios
 
             var sql = @"INSERT INTO Ventas (NumeroComprobante,Fecha,IdCliente,IdVendedor,IdSucursal,Total,TotalPagado,Estado,Observaciones)
                         VALUES
-                        (@NumeroComprobante,@Fecha,@IdCliente,@IdVendedor,@IdSucursal,@Total,@TotalPagado,@Estado,@Observaciones);
+                        (@NumeroComprobante,@Fecha,NULLIF(@IdCliente, 0),@IdVendedor,@IdSucursal,@Total,@TotalPagado,@Estado,@Observaciones);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 

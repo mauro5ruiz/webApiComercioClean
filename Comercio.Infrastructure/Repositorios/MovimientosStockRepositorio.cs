@@ -62,7 +62,8 @@ namespace Comercio.Infrastructure.Repositorios
             var sql = @"SELECT ms.IdProducto, p.Nombre as producto, ms.Cantidad, ms.Fecha, ms.Observaciones
                   FROM MovimientosStock ms
                   inner join Productos p on p.Id = ms.IdProducto
-                  WHERE ms.IdTipoMovimiento = @idTipoMovimiento ";
+                  WHERE ms.IdTipoMovimiento = @idTipoMovimiento 
+                  ORDER BY ms.fecha desc";
 
             return await connection.QueryAsync<MovimientoStock>(sql, new { idTipoMovimiento });
         }

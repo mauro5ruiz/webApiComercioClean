@@ -113,6 +113,14 @@ namespace Comercio.Application.Servicios
             venta.Estado = EstadoVentaActiva;
             venta.Fecha = DateTime.Now;
 
+            if(venta.IdCliente <= 0)
+            {
+                var pagado = pagos?.Sum(p => p.Importe);
+                if(!pagado.HasValue || pagado.Value < totalCalculado)
+                    throw new ArgumentException("Para Consumidor final la venta debe quedar pagada en su totalidad.");
+            }
+
+
             var idVenta = await _ventasRepository.Insertar(venta);
 
             foreach (var detalle in detalles)
