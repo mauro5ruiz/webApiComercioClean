@@ -1,12 +1,17 @@
-﻿using Comercio.Application.Interfaces;
+using Comercio.Application.Interfaces;
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
+using System.Transactions;
 
 namespace Comercio.Application.Servicios
 {
     public class DevolucionesVentasServicio : IDevolucionesVentasServicio
     {
+        private const string EstadoActiva = "Activa";
+        private const string EstadoPagoActivo = "Activo";
+        private const string ObservacionNotaCreditoConsumidorFinal = "Generada por devolución de venta a Consumidor Final";
+
         private readonly IDevolucionesVentasRepository _devolucionesRepository;
         private readonly IDetalleDevolucionesVentasRepository _detalleRepository;
         private readonly IDevolucionPagosRepository _pagosRepository;
@@ -15,10 +20,18 @@ namespace Comercio.Application.Servicios
         private readonly IProductosRepository _productosRepository;
         private readonly IMovimientosStockRepository _movimientosStockRepository;
         private readonly ICreditoClienteRepository _creditoClienteRepository;
+        private readonly INotasCreditoRepository _notasCreditoRepository;
 
-        public DevolucionesVentasServicio(IDevolucionesVentasRepository devolucionesRepository, IDetalleDevolucionesVentasRepository detalleRepository,
-            IDevolucionPagosRepository pagosRepository, IVentasRepository ventasRepository, IDetalleVentasRepostory detalleVentasRepository,
-            IProductosRepository productosRepository, IMovimientosStockRepository movimientosStockRepository, ICreditoClienteRepository creditoClienteRepository)
+        public DevolucionesVentasServicio(
+            IDevolucionesVentasRepository devolucionesRepository,
+            IDetalleDevolucionesVentasRepository detalleRepository,
+            IDevolucionPagosRepository pagosRepository,
+            IVentasRepository ventasRepository,
+            IDetalleVentasRepostory detalleVentasRepository,
+            IProductosRepository productosRepository,
+            IMovimientosStockRepository movimientosStockRepository,
+            ICreditoClienteRepository creditoClienteRepository,
+            INotasCreditoRepository notasCreditoRepository)
         {
             _devolucionesRepository = devolucionesRepository;
             _detalleRepository = detalleRepository;
@@ -28,6 +41,7 @@ namespace Comercio.Application.Servicios
             _productosRepository = productosRepository;
             _movimientosStockRepository = movimientosStockRepository;
             _creditoClienteRepository = creditoClienteRepository;
+            _notasCreditoRepository = notasCreditoRepository;
         }
 
         public async Task<int> RegistrarDevolucion(DevolucionVenta devolucion, IEnumerable<DetalleDevolucionVenta> detalles, IEnumerable<DevolucionVentaPago>? pagos = null)
@@ -35,7 +49,9 @@ namespace Comercio.Application.Servicios
             if (devolucion is null)
                 throw new ArgumentNullException(nameof(devolucion));
 
-            if (detalles is null || !detalles.Any())
+            var detallesList = detalles?.ToList() ?? throw new ArgumentException("La devolución debe tener al menos un producto.");
+
+            if (!detallesList.Any())
                 throw new ArgumentException("La devolución debe tener al menos un producto.");
 
             var venta = await _ventasRepository.ObtenerPorId(devolucion.IdVenta);
@@ -46,11 +62,13 @@ namespace Comercio.Application.Servicios
             if (venta.Estado == EstadoComprobante.Anulada.ToString())
                 throw new InvalidOperationException("No se puede devolver una venta anulada.");
 
+            devolucion.IdCliente = venta.IdCliente;
+
             var detallesVenta = (await _detalleVentasRepository.ObtenerPorVenta(venta.Id)).ToList();
 
             decimal total = 0;
 
-            foreach (var detalle in detalles)
+            foreach (var detalle in detallesList)
             {
                 var detalleVenta = detallesVenta.FirstOrDefault(x => x.IdProducto == detalle.IdProducto);
 
@@ -71,11 +89,13 @@ namespace Comercio.Application.Servicios
 
             devolucion.Total = total;
             devolucion.Fecha = DateTime.Now;
-            devolucion.Estado = "Activa";
+            devolucion.Estado = EstadoActiva;
+
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
             var idDevolucion = await _devolucionesRepository.Insertar(devolucion);
 
-            foreach (var detalle in detalles)
+            foreach (var detalle in detallesList)
             {
                 detalle.IdDevolucionVenta = idDevolucion;
 
@@ -89,7 +109,7 @@ namespace Comercio.Application.Servicios
                 var movimiento = new MovimientoStock
                 {
                     IdProducto = detalle.IdProducto,
-                    Cantidad = detalle.Cantidad, // vuelve al stock
+                    Cantidad = detalle.Cantidad,
                     IdTipoMovimientoStock = TipoMovimientoStock.DevolucionVenta,
                     Fecha = DateTime.Now,
                     IdReferencia = idDevolucion,
@@ -98,51 +118,34 @@ namespace Comercio.Application.Servicios
 
                 await _movimientosStockRepository.RegistrarMovimiento(movimiento);
 
-                int? idDetalleVenta = await _detalleVentasRepository.ObtenerIdDetalleVenta(venta.Id, detalle.IdProducto);
+                var idDetalleVenta = await _detalleVentasRepository.ObtenerIdDetalleVenta(venta.Id, detalle.IdProducto);
                 if (idDetalleVenta.HasValue)
                     await _detalleVentasRepository.AgregarCantidadDevuelto(idDetalleVenta.Value, detalle.IdProducto, detalle.Cantidad);
             }
+
             decimal totalPagado = 0;
-            if (pagos != null && pagos.Any())
+            if (pagos != null)
             {
                 foreach (var pago in pagos)
                 {
                     pago.IdDevolucionVenta = idDevolucion;
                     pago.FechaPago = DateTime.Now;
-                    pago.Estado = "Activo";
+                    pago.Estado = EstadoPagoActivo;
 
                     await _pagosRepository.Insertar(pago);
-                    total += pago.Importe;
+                    totalPagado += pago.Importe;
                 }
             }
-            else
-            {
-                var credito = new CreditoCliente
-                {
-                    IdCliente = devolucion.IdCliente,
-                    IdDevolucionVenta = idDevolucion,
-                    Importe = total,
-                    Saldo = total,
-                    Fecha = DateTime.Now
-                };
 
-                await _creditoClienteRepository.Insertar(credito);
-            }
+            if (totalPagado > devolucion.Total)
+                throw new InvalidOperationException("Los pagos de la devolución no pueden superar el total devuelto.");
 
-            if (totalPagado >= devolucion.Total)
-            {
-                var credito = new CreditoCliente
-                {
-                    IdCliente = devolucion.IdCliente,
-                    IdDevolucionVenta = idDevolucion,
-                    Importe = devolucion.Total - totalPagado,
-                    Saldo = total,
-                    Fecha = DateTime.Now
-                };
+            var saldoPendiente = devolucion.Total - totalPagado;
 
-                await _creditoClienteRepository.Insertar(credito);
-            }
+            if (saldoPendiente > 0)
+                await GenerarCreditoONotaCredito(devolucion.IdCliente, idDevolucion, saldoPendiente);
 
+            scope.Complete();
             return idDevolucion;
         }
 
@@ -169,5 +172,50 @@ namespace Comercio.Application.Servicios
 
             return await _devolucionesRepository.ObtenerPorFechas(desde, hasta);
         }
+
+        private async Task GenerarCreditoONotaCredito(int idCliente, int idDevolucionVenta, decimal importe)
+        {
+            if (importe <= 0)
+                return;
+
+            if (EsConsumidorFinal(idCliente))
+            {
+                var notaExistente = await _notasCreditoRepository.ObtenerPorDevolucion(idDevolucionVenta);
+
+                if (notaExistente is not null)
+                    return;
+
+                await InsertarNotaCredito(idDevolucionVenta, importe);
+
+                return;
+            }
+
+            await _creditoClienteRepository.Insertar(new CreditoCliente
+            {
+                IdCliente = idCliente,
+                IdDevolucionVenta = idDevolucionVenta,
+                Importe = importe,
+                Saldo = importe,
+                Fecha = DateTime.Now
+            });
+        }
+
+        private async Task InsertarNotaCredito(int idDevolucionVenta, decimal importe)
+        {
+            var codigo = await _notasCreditoRepository.ObtenerSiguienteCodigo();
+
+            await _notasCreditoRepository.Insertar(new NotaCredito
+            {
+                IdDevolucionVenta = idDevolucionVenta,
+                Codigo = codigo,
+                Importe = importe,
+                Saldo = importe,
+                Fecha = DateTime.Now,
+                Estado = EstadoActiva,
+                Observaciones = ObservacionNotaCreditoConsumidorFinal
+            });
+        }
+
+        private static bool EsConsumidorFinal(int idCliente) => idCliente <= 0;
     }
 }

@@ -1,11 +1,11 @@
-using AutoMapper;
+ï»¿using AutoMapper;
 using Comercio.Application.Interfaces;
 using Comercio.Application.Mapping;
 using Comercio.Application.Servicios;
 using Comercio.Domain.Interfaces;
 using Comercio.Infrastructure.Repositorios;
 using Comercio.Infrastructure.Servicios;
-using Microsoft.AspNetCore.Diagnostics; // <-- AÑADIR
+using Microsoft.AspNetCore.Diagnostics; // <-- AÃ‘ADIR
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +52,7 @@ builder.Services.AddScoped<IAjusteStockServicio, AjusteStockServicio>();
 builder.Services.AddScoped<IKardexServicio, KardexServicio>();
 
 // ===== Servicios (Infra) =====
-builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÑADIR
+builder.Services.AddScoped<IArchivosServicio, ArchivosServicio>(); // <-- AÃ‘ADIR
 
 // ===== Repositorios (Infrastructure) =====
 builder.Services.AddScoped<ICategoriasRepository>(_ => new CategoriasRepositorio(connectionString));
@@ -82,6 +82,7 @@ builder.Services.AddScoped<IDevolucionCompraDetalleRepository>(_ => new DetalleD
 builder.Services.AddScoped<IPagoDevolucionCompraRepository>(_ => new DevolucionCompraPagosRepositorio(connectionString));
 builder.Services.AddScoped<ICreditoProveedorRepository>(_ => new CreditoProveedorRepositorio(connectionString));
 builder.Services.AddScoped<ICreditoClienteRepository>(_ => new CreditoClienteRepositorio(connectionString));
+builder.Services.AddScoped<INotasCreditoRepository>(_ => new NotasCreditoRepositorio(connectionString));
 
 var app = builder.Build();
 
