@@ -2,6 +2,7 @@
 using Comercio.Domain.Entidades;
 using Comercio.Domain.Enums;
 using Comercio.Domain.Interfaces;
+using System.Transactions;
 
 namespace Comercio.Application.Servicios
 {
@@ -67,22 +68,51 @@ namespace Comercio.Application.Servicios
             if (compra is null)
                 throw new ArgumentNullException(nameof(compra));
 
-            if (detalles is null || !detalles.Any())
+            var detallesList = detalles?.ToList() ?? throw new ArgumentException("La compra debe tener al menos un detalle.");
+
+            if (!detallesList.Any())
                 throw new ArgumentException("La compra debe tener al menos un detalle.");
 
-            // Calculo el total
-            var totalCalculado = detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+            var pagosList = pagos?.ToList() ?? new List<CompraPago>();
+            var totalCalculado = detallesList.Sum(d => d.Cantidad * d.PrecioUnitario);
+            var creditoAplicado = compra.CreditoAplicado;
+            var totalPagos = pagosList.Sum(p => p.Importe);
+
+            if (creditoAplicado < 0)
+                throw new ArgumentException("El credito aplicado no puede ser menor a cero.");
+
+            if (creditoAplicado > totalCalculado)
+                throw new InvalidOperationException("El credito aplicado no puede superar el total de la compra.");
+
+            if (totalPagos + creditoAplicado > totalCalculado)
+                throw new InvalidOperationException("La suma de pagos y credito aplicado no puede superar el total de la compra.");
 
             compra.Total = totalCalculado;
-            compra.TotalPagado = 0;
-            compra.SaldoPendiente = totalCalculado;
+            compra.TotalPagado = totalPagos;
+            compra.SaldoPendiente = totalCalculado - totalPagos - creditoAplicado;
             compra.Estado = EstadoComprobante.Activa;
             compra.Fecha = DateTime.Now;
 
+            var creditosProveedor = new List<CreditoProveedor>();
+
+            if (creditoAplicado > 0)
+            {
+                creditosProveedor = (await _creditoProveedorRepository.ObtenerPorProveedor(compra.IdProveedor))
+                    .Where(c => c.Saldo > 0)
+                    .OrderBy(c => c.Fecha)
+                    .ToList();
+
+                var creditoDisponible = creditosProveedor.Sum(c => c.Saldo);
+
+                if (creditoAplicado > creditoDisponible)
+                    throw new InvalidOperationException("El credito aplicado no puede superar el credito disponible del proveedor.");
+            }
+
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
             var idCompra = await _comprasRepository.Insertar(compra);
 
-            // Inserto los detalles y sumo el stock
-            foreach (var detalle in detalles)
+            foreach (var detalle in detallesList)
             {
                 var producto = await _productosRepository.ObtenerPorId(detalle.IdProducto);
 
@@ -105,10 +135,35 @@ namespace Comercio.Application.Servicios
                 await _movimientosStockRepository.RegistrarMovimiento(movimiento);
             }
 
-            // Inserto los pagos (si existen)
-            if (pagos != null && pagos.Any())
+            if (creditoAplicado > 0)
             {
-                foreach (var pago in pagos)
+                var creditoRestante = creditoAplicado;
+
+                foreach (var credito in creditosProveedor)
+                {
+                    if (creditoRestante <= 0)
+                        break;
+
+                    var montoAplicar = Math.Min(credito.Saldo, creditoRestante);
+
+                    if (montoAplicar <= 0)
+                        continue;
+
+                    var creditoConsumido = await _creditoProveedorRepository.ConsumirCredito(credito.Id, montoAplicar);
+
+                    if (!creditoConsumido)
+                        throw new InvalidOperationException("No se pudo aplicar el credito solicitado. Verifique el saldo disponible del proveedor.");
+
+                    creditoRestante -= montoAplicar;
+                }
+
+                if (creditoRestante > 0)
+                    throw new InvalidOperationException("No se pudo aplicar el credito solicitado. Verifique el saldo disponible del proveedor.");
+            }
+
+            if (pagosList.Any())
+            {
+                foreach (var pago in pagosList)
                 {
                     pago.IdCompra = idCompra;
                     pago.FechaPago = DateTime.Now;
@@ -116,9 +171,12 @@ namespace Comercio.Application.Servicios
 
                     await _pagosRepository.Insertar(pago);
                 }
-                await _pagosRepository.RecalcularTotalPagado(idCompra);
             }
 
+            if (creditoAplicado > 0 || pagosList.Any())
+                await _pagosRepository.RecalcularTotalPagado(idCompra, creditoAplicado);
+
+            scope.Complete();
             return idCompra;
         }
 
@@ -142,7 +200,7 @@ namespace Comercio.Application.Servicios
                 .Where(p => p.Estado == EstadoComprobante.Activa)
                 .ToList();
 
-            if (pagosActivos.Any())
+            if (pagosActivos.Any() || compra.CreditoAplicado > 0)
                 await RegistrarDevolucionAutomaticaPorAnulacion(compra, detalles, pagosActivos);
 
             foreach (var detalle in detalles)
@@ -188,16 +246,17 @@ namespace Comercio.Application.Servicios
             }
 
             var totalPagado = pagosActivos.Sum(p => p.Importe);
+            var totalCancelado = totalPagado + compra.CreditoAplicado;
 
-            if (totalPagado <= 0)
+            if (totalCancelado <= 0)
                 return;
 
             await _creditoProveedorRepository.Insertar(new CreditoProveedor
             {
                 IdProveedor = compra.IdProveedor,
                 IdDevolucionCompra = idDevolucion,
-                Importe = totalPagado,
-                Saldo = totalPagado,
+                Importe = totalCancelado,
+                Saldo = totalCancelado,
                 Fecha = DateTime.Now
             });
         }
@@ -225,7 +284,7 @@ namespace Comercio.Application.Servicios
 
             if (saldoCompra > 0 && importe > 0)
             {
-                var montoPago = Math.Min(saldoCompra, importe);
+                    var montoPago = Math.Min(saldoCompra, importe);
 
                 var pago = new CompraPago
                 {

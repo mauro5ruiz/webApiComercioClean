@@ -40,6 +40,16 @@ namespace Comercio.Infrastructure.Repositorios
 
         public async Task RecalcularTotalPagado(int idCompra)
         {
+            await RecalcularTotalPagado(idCompra, null);
+        }
+
+        public async Task RecalcularTotalPagado(int idCompra, decimal creditoAplicado)
+        {
+            await RecalcularTotalPagado(idCompra, (decimal?)creditoAplicado);
+        }
+
+        private async Task RecalcularTotalPagado(int idCompra, decimal? creditoAplicadoOverride)
+        {
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"UPDATE Compras
@@ -47,17 +57,17 @@ namespace Comercio.Infrastructure.Repositorios
                             SELECT ISNULL(SUM(Importe), 0)
                             FROM CompraPagos
                             WHERE IdCompra = @IdCompra
-                              AND Estado = 1 -- Activo
+                              AND Estado = 1
                         ),
                         SaldoPendiente = Total - (
                             SELECT ISNULL(SUM(Importe), 0)
                             FROM CompraPagos
                             WHERE IdCompra = @IdCompra
                               AND Estado = 1
-                        )
+                        ) - ISNULL(@CreditoAplicado, CreditoAplicado)
                         WHERE Id = @IdCompra;";
 
-            await connection.ExecuteAsync(sql, new { IdCompra = idCompra });
+            await connection.ExecuteAsync(sql, new { IdCompra = idCompra, CreditoAplicado = creditoAplicadoOverride });
         }
 
         public async Task CambiarEstado(int idPago, int estado)

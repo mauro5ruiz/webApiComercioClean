@@ -22,7 +22,7 @@ namespace Comercio.Infrastructure.Repositorios
             desde = desde.Date;
             hasta = hasta.Date.AddDays(1);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                 FROM Compras
                 WHERE Fecha >= @Desde
                   AND Fecha < @Hasta
@@ -35,7 +35,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                 FROM Compras
                 WHERE Estado = @idEstado
                 ORDER BY Fecha DESC;";
@@ -47,7 +47,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Compras
                         WHERE Id = @Id;";
 
@@ -58,7 +58,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Compras
                         WHERE NumeroComprobante = @NumeroComprobante;";
 
@@ -81,9 +81,9 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"INSERT INTO Compras
-                        (NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones)
+                        (NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones)
                         VALUES
-                        (@NumeroComprobante, @Fecha, @IdProveedor, @IdSucursal, @Total, @TotalPagado, @SaldoPendiente, @Estado, @Observaciones);
+                        (@NumeroComprobante, @Fecha, @IdProveedor, @IdSucursal, @Total, @TotalPagado, @CreditoAplicado, @SaldoPendiente, @Estado, @Observaciones);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -118,6 +118,7 @@ namespace Comercio.Infrastructure.Repositorios
             var sql = @"UPDATE Compras
                         SET Total = @Total,
                             TotalPagado = @TotalPagado,
+                            CreditoAplicado = @CreditoAplicado,
                             SaldoPendiente = @SaldoPendiente
                         WHERE Id = @Id;";
 
@@ -126,6 +127,7 @@ namespace Comercio.Infrastructure.Repositorios
                 Id = idCompra,
                 Total = total,
                 TotalPagado = totalPagado,
+                CreditoAplicado = 0,
                 SaldoPendiente = saldoPendiente
             });
         }
@@ -134,7 +136,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdProveedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado
                 FROM Compras
                 WHERE IdProveedor = @IdProveedor
                 AND SaldoPendiente > 0

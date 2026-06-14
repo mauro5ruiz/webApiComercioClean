@@ -79,7 +79,8 @@ namespace Comercio.Api.Controllers
                     NumeroComprobante = request.NumeroComprobante,
                     IdProveedor = request.IdProveedor,
                     IdSucursal = request.IdSucursal,
-                    Observaciones = request.Observaciones
+                    Observaciones = request.Observaciones,
+                    CreditoAplicado = request.CreditoAplicado ?? 0
                 };
 
                 var detalles = request.Detalles.Select(d => new DetalleCompra

@@ -39,19 +39,22 @@ namespace Comercio.Infrastructure.Repositorios
             await connection.ExecuteAsync(sql, credito);
         }
 
-        public async Task ConsumirCredito(int idCredito, decimal importe)
+        public async Task<bool> ConsumirCredito(int idCredito, decimal importe)
         {
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"UPDATE CreditoProveedor
                         SET Saldo = Saldo - @Importe
-                        WHERE Id = @Id;";
+                        WHERE Id = @Id
+                          AND Saldo >= @Importe;";
 
-            await connection.ExecuteAsync(sql, new
+            var filasAfectadas = await connection.ExecuteAsync(sql, new
             {
                 Id = idCredito,
                 Importe = importe
             });
+
+            return filasAfectadas > 0;
         }
     }
 }

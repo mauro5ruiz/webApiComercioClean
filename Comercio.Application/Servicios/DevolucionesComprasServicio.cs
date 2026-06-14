@@ -111,31 +111,21 @@ namespace Comercio.Application.Servicios
                     pago.Fecha = DateTime.Now;
 
                     await _pagosRepository.Insertar(pago);
-                    total += pago.Importe;
+                    totalPagado += pago.Importe;
                 }
             }
-            else
+
+            var totalCanceladoCompra = compra.TotalPagado + compra.CreditoAplicado;
+            var creditoGenerado = Math.Min(devolucion.Total, totalCanceladoCompra) - totalPagado;
+
+            if (creditoGenerado > 0)
             {
                 var credito = new CreditoProveedor
                 {
                     IdProveedor = devolucion.IdProveedor,
                     IdDevolucionCompra = idDevolucion,
-                    Importe = total,
-                    Saldo = total,
-                    Fecha = DateTime.Now
-                };
-
-                await _creditoProveedorRepository.Insertar(credito);
-            }
-
-            if(totalPagado >= devolucion.Total)
-            {
-                var credito = new CreditoProveedor
-                {
-                    IdProveedor = devolucion.IdProveedor,
-                    IdDevolucionCompra = idDevolucion,
-                    Importe = devolucion.Total - totalPagado,
-                    Saldo = total,
+                    Importe = creditoGenerado,
+                    Saldo = creditoGenerado,
                     Fecha = DateTime.Now
                 };
 

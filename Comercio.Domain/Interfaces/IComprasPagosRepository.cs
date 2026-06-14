@@ -7,6 +7,7 @@ namespace Comercio.Domain.Interfaces
         Task Insertar(CompraPago pago);
         Task<IEnumerable<CompraPago>> ObtenerPorCompra(int idCompra);
         Task RecalcularTotalPagado(int idCompra);
+        Task RecalcularTotalPagado(int idCompra, decimal creditoAplicado);
         Task CambiarEstado(int idPago, int estado);
     }
 }

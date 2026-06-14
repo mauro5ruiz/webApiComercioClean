@@ -18,6 +18,7 @@ namespace Comercio.Domain.Entidades
 
         public decimal Total { get; set; }
         public decimal TotalPagado { get; set; }
+        public decimal CreditoAplicado { get; set; }
         public decimal SaldoPendiente { get; set; }
 
         public EstadoComprobante Estado { get; set; } = EstadoComprobante.Activa;

@@ -9,6 +9,7 @@ namespace Comercio.Application.Dtos.Proveedores
         public string Comprobante { get; set; } = string.Empty;
         public decimal Total { get; set; }
         public decimal Pagado { get; set; }
+        public decimal CreditoAplicado { get; set; }
         public decimal SaldoPendiente { get; set; }
     }
 }

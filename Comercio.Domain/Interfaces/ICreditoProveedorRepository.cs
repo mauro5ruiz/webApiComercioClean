@@ -8,6 +8,6 @@ namespace Comercio.Domain.Interfaces
 
         Task Insertar(CreditoProveedor credito);
 
-        Task ConsumirCredito(int idCredito, decimal importe);
+        Task<bool> ConsumirCredito(int idCredito, decimal importe);
     }
 }

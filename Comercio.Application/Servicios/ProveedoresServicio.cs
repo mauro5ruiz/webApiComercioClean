@@ -205,6 +205,7 @@ namespace Comercio.Application.Servicios
                     Comprobante = c.NumeroComprobante,
                     Total = c.Total,
                     Pagado = c.TotalPagado,
+                    CreditoAplicado = c.CreditoAplicado,
                     SaldoPendiente = c.SaldoPendiente
                 })
                 .OrderBy(c => c.Fecha)
@@ -223,8 +224,22 @@ namespace Comercio.Application.Servicios
                     Importe = compra.Total,
                     TotalCompra = compra.Total,
                     PagadoCompra = compra.TotalPagado,
+                    CreditoAplicadoCompra = compra.CreditoAplicado,
                     SaldoPendienteCompra = compra.SaldoPendiente
                 });
+
+                if (compra.CreditoAplicado > 0)
+                {
+                    movimientos.Add(new ProveedorMovimientoDto
+                    {
+                        Tipo = "AplicacionCredito",
+                        IdCompra = compra.Id,
+                        Fecha = compra.Fecha,
+                        Comprobante = compra.NumeroComprobante,
+                        Referencia = "Aplicacion de saldo a favor en compra",
+                        Importe = -compra.CreditoAplicado
+                    });
+                }
 
                 if (compra.Pagos is not null)
                 {
@@ -323,7 +338,10 @@ namespace Comercio.Application.Servicios
 
                     var montoCredito = Math.Min(saldoCompra, credito.Saldo);
 
-                    await _creditoProveedorRepository.ConsumirCredito(credito.Id, montoCredito);
+                    var creditoConsumido = await _creditoProveedorRepository.ConsumirCredito(credito.Id, montoCredito);
+
+                    if (!creditoConsumido)
+                        throw new InvalidOperationException("No se pudo aplicar el saldo a favor del proveedor. Verifique el credito disponible.");
 
                     saldoCompra -= montoCredito;
 

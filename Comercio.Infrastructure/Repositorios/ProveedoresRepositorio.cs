@@ -158,6 +158,7 @@ namespace Comercio.Infrastructure.Repositorios
                     c.IdSucursal,
                     c.Total,
                     c.TotalPagado,
+                    c.CreditoAplicado,
                     c.SaldoPendiente,
                     c.Estado,
                     c.Observaciones,
