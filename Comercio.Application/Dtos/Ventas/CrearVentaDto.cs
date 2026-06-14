@@ -8,6 +8,7 @@ namespace Comercio.Application.Dtos.Ventas
         public int IdVendedor { get; set; }
         public int IdSucursal { get; set; }
         public string? Observaciones { get; set; }
+        public decimal? CreditoAplicado { get; set; }
 
         public List<DetalleVentaDto> Detalles { get; set; } = new();
         public List<VentaPagoDto>? Pagos { get; set; }

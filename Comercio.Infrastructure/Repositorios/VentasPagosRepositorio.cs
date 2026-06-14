@@ -43,6 +43,18 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
+            await RecalcularTotalPagado(idVenta, null);
+        }
+
+        public async Task RecalcularTotalPagado(int idVenta, decimal creditoAplicado)
+        {
+            await RecalcularTotalPagado(idVenta, (decimal?)creditoAplicado);
+        }
+
+        private async Task RecalcularTotalPagado(int idVenta, decimal? creditoAplicadoOverride)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
             var sql = @"UPDATE Ventas
                         SET TotalPagado = (
                             SELECT ISNULL(SUM(Importe), 0)
@@ -52,7 +64,7 @@ namespace Comercio.Infrastructure.Repositorios
                         )
                         WHERE Id = @IdVenta;";
 
-            await connection.ExecuteAsync(sql, new { IdVenta = idVenta });
+            await connection.ExecuteAsync(sql, new { IdVenta = idVenta, CreditoAplicado = creditoAplicadoOverride });
         }
 
         public async Task CambiarEstado(int idPago, string estado)

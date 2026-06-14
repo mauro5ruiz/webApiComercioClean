@@ -121,6 +121,7 @@ namespace Comercio.Application.Servicios
 
             var pagosDevolucion = pagos?.ToList() ?? new List<DevolucionVentaPago>();
             var totalCobradoVenta = venta.TotalPagado;
+            var totalCanceladoVenta = venta.TotalPagado + venta.CreditoAplicado;
             var totalPagadoEnDevolucion = 0m;
 
             if (totalCobradoVenta <= 0)
@@ -147,12 +148,12 @@ namespace Comercio.Application.Servicios
                 }
             }
 
-            var maximoRefundable = Math.Min(totalDevuelto, totalCobradoVenta);
+            var maximoRefundableEnPagos = Math.Min(totalDevuelto, totalCobradoVenta);
 
-            if (totalPagadoEnDevolucion > maximoRefundable)
+            if (totalPagadoEnDevolucion > maximoRefundableEnPagos)
                 throw new InvalidOperationException("Los pagos de la devolucion no pueden superar lo efectivamente cobrado ni el total devuelto.");
 
-            var saldoCreditoONota = maximoRefundable - totalPagadoEnDevolucion;
+            var saldoCreditoONota = Math.Min(totalDevuelto, totalCanceladoVenta) - totalPagadoEnDevolucion;
 
             if (saldoCreditoONota > 0)
                 await GenerarCreditoONotaCredito(devolucion.IdCliente, idDevolucion, saldoCreditoONota);

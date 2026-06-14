@@ -87,12 +87,15 @@ namespace Comercio.Application.Servicios
             if (venta is null)
                 throw new ArgumentNullException(nameof(venta));
 
-            if (detalles is null || !detalles.Any())
+            var detallesList = detalles?.ToList() ?? throw new ArgumentException("La venta debe tener al menos un detalle.");
+
+            if (!detallesList.Any())
                 throw new ArgumentException("La venta debe tener al menos un detalle.");
 
+            var pagosList = pagos?.ToList() ?? new List<VentaPago>();
             var erroresStock = new List<string>();
 
-            foreach (var detalle in detalles)
+            foreach (var detalle in detallesList)
             {
                 var producto = await _productosRepository.ObtenerPorId(detalle.IdProducto);
 
@@ -116,22 +119,54 @@ namespace Comercio.Application.Servicios
             if (erroresStock.Any())
                 throw new InvalidOperationException("Errores de stock:\n" + string.Join("\n", erroresStock));
 
-            var totalCalculado = detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+            var totalCalculado = detallesList.Sum(d => d.Cantidad * d.PrecioUnitario);
+            var creditoAplicado = venta.CreditoAplicado;
+            var totalPagos = pagosList.Sum(p => p.Importe);
+
+            if (creditoAplicado < 0)
+                throw new ArgumentException("El credito aplicado no puede ser menor a cero.");
+
+            if (creditoAplicado > totalCalculado)
+                throw new InvalidOperationException("El credito aplicado no puede superar el total de la venta.");
+
+            if (totalPagos + creditoAplicado > totalCalculado)
+                throw new InvalidOperationException("La suma de pagos y credito aplicado no puede superar el total de la venta.");
+
             venta.Total = totalCalculado;
-            venta.TotalPagado = 0;
+            venta.TotalPagado = totalPagos;
+            venta.SaldoPendiente = totalCalculado - totalPagos - creditoAplicado;
             venta.Estado = EstadoVentaActiva;
             venta.Fecha = DateTime.Now;
 
             if (venta.IdCliente <= 0)
             {
-                var pagado = pagos?.Sum(p => p.Importe);
-                if (!pagado.HasValue || pagado.Value < totalCalculado)
+                if (creditoAplicado > 0)
+                    throw new InvalidOperationException("No se puede aplicar saldo a favor sin un cliente asociado.");
+
+                if (totalPagos < totalCalculado)
                     throw new ArgumentException("Para Consumidor final la venta debe quedar pagada en su totalidad.");
             }
 
+            var creditosCliente = new List<CreditoCliente>();
+
+            if (venta.IdCliente > 0 && creditoAplicado > 0)
+            {
+                creditosCliente = (await _creditoClienteRepository.ObtenerPorCliente(venta.IdCliente))
+                    .Where(c => c.Saldo > 0)
+                    .OrderBy(c => c.Fecha)
+                    .ToList();
+
+                var creditoDisponible = creditosCliente.Sum(c => c.Saldo);
+
+                if (creditoAplicado > creditoDisponible)
+                    throw new InvalidOperationException("El credito aplicado no puede superar el credito disponible del cliente.");
+            }
+
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
             var idVenta = await _ventasRepository.Insertar(venta);
 
-            foreach (var detalle in detalles)
+            foreach (var detalle in detallesList)
             {
                 var producto = await _productosRepository.ObtenerPorId(detalle.IdProducto);
 
@@ -155,9 +190,35 @@ namespace Comercio.Application.Servicios
                 });
             }
 
-            if (pagos != null && pagos.Any())
+            if (creditoAplicado > 0)
             {
-                foreach (var pago in pagos)
+                var creditoRestante = creditoAplicado;
+
+                foreach (var credito in creditosCliente)
+                {
+                    if (creditoRestante <= 0)
+                        break;
+
+                    var montoAplicar = Math.Min(credito.Saldo, creditoRestante);
+
+                    if (montoAplicar <= 0)
+                        continue;
+
+                    var creditoConsumido = await _creditoClienteRepository.ConsumirCredito(credito.Id, montoAplicar);
+
+                    if (!creditoConsumido)
+                        throw new InvalidOperationException("No se pudo aplicar el credito solicitado. Verifique el saldo disponible del cliente.");
+
+                    creditoRestante -= montoAplicar;
+                }
+
+                if (creditoRestante > 0)
+                    throw new InvalidOperationException("No se pudo aplicar el credito solicitado. Verifique el saldo disponible del cliente.");
+            }
+
+            if (pagosList.Any())
+            {
+                foreach (var pago in pagosList)
                 {
                     pago.IdVenta = idVenta;
                     pago.FechaPago = DateTime.Now;
@@ -165,10 +226,12 @@ namespace Comercio.Application.Servicios
 
                     await _pagosRepository.Insertar(pago);
                 }
-
-                await _pagosRepository.RecalcularTotalPagado(idVenta);
             }
 
+            if (creditoAplicado > 0 || pagosList.Any())
+                await _pagosRepository.RecalcularTotalPagado(idVenta, creditoAplicado);
+
+            scope.Complete();
             return idVenta;
         }
 
@@ -251,8 +314,6 @@ namespace Comercio.Application.Servicios
             {
                 if (pagosDevolucion.Any())
                     throw new InvalidOperationException("No se pueden registrar pagos de devolucion si la venta no tiene pagos activos.");
-
-                return;
             }
 
             var totalDevueltoEnPagos = 0m;
@@ -276,7 +337,7 @@ namespace Comercio.Application.Servicios
             if (totalDevueltoEnPagos > totalPagado)
                 throw new InvalidOperationException("Los pagos de la devolucion no pueden superar el total pagado de la venta.");
 
-            var saldoCreditoONota = totalPagado - totalDevueltoEnPagos;
+            var saldoCreditoONota = totalPagado + venta.CreditoAplicado - totalDevueltoEnPagos;
 
             if (saldoCreditoONota <= 0)
                 return;

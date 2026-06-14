@@ -6,6 +6,6 @@ namespace Comercio.Domain.Interfaces
     {
         Task<IEnumerable<CreditoCliente>> ObtenerPorCliente(int idCliente);
         Task Insertar(CreditoCliente credito);
-        Task ConsumirCredito(int idCredito, decimal importe);
+        Task<bool> ConsumirCredito(int idCredito, decimal importe);
     }
 }

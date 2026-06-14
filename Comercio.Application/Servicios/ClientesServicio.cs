@@ -290,6 +290,7 @@ namespace Comercio.Application.Servicios
                     Comprobante = v.NumeroComprobante,
                     Total = v.Total,
                     Cobrado = v.TotalPagado,
+                    CreditoAplicado = v.CreditoAplicado,
                     SaldoPendiente = v.SaldoPendiente
                 })
                 .ToList();
@@ -307,8 +308,22 @@ namespace Comercio.Application.Servicios
                     Importe = venta.Total,
                     TotalVenta = venta.Total,
                     CobradoVenta = venta.TotalPagado,
+                    CreditoAplicadoVenta = venta.CreditoAplicado,
                     SaldoPendienteVenta = venta.SaldoPendiente
                 });
+
+                if (venta.CreditoAplicado > 0)
+                {
+                    movimientos.Add(new ClienteMovimientoDto
+                    {
+                        Tipo = "AplicacionCredito",
+                        IdVenta = venta.Id,
+                        Fecha = venta.Fecha,
+                        Comprobante = venta.NumeroComprobante,
+                        Referencia = "Aplicacion de saldo a favor en venta",
+                        Importe = -venta.CreditoAplicado
+                    });
+                }
 
                 foreach (var pago in venta.Pagos
                     .Where(p => p.Estado == "Activo")
@@ -411,7 +426,10 @@ namespace Comercio.Application.Servicios
 
                     var montoCredito = Math.Min(saldoVenta, credito.Saldo);
 
-                    await _creditoClienteRepository.ConsumirCredito(credito.Id, montoCredito);
+                    var creditoConsumido = await _creditoClienteRepository.ConsumirCredito(credito.Id, montoCredito);
+
+                    if (!creditoConsumido)
+                        throw new InvalidOperationException("No se pudo aplicar el saldo a favor del cliente. Verifique el credito disponible.");
 
                     credito.Saldo -= montoCredito;
                     saldoVenta -= montoCredito;

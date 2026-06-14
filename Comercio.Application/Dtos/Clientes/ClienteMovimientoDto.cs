@@ -14,6 +14,7 @@ namespace Comercio.Application.Dtos.Clientes
         public decimal? SaldoCredito { get; set; }
         public decimal? TotalVenta { get; set; }
         public decimal? CobradoVenta { get; set; }
+        public decimal? CreditoAplicadoVenta { get; set; }
         public decimal? SaldoPendienteVenta { get; set; }
     }
 }

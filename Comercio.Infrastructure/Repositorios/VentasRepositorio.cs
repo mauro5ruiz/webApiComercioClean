@@ -18,7 +18,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, 
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, CreditoAplicado,
                        SaldoPendiente, Estado, Observaciones, FechaAnulacion
                 FROM Ventas
                 WHERE Fecha >= @Desde
@@ -36,7 +36,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente, Estado, Observaciones, FechaAnulacion
                 FROM Ventas
                 WHERE Estado = @estado
                 ORDER BY Fecha DESC;";
@@ -48,7 +48,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, 
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, CreditoAplicado,
                                SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Ventas
                         WHERE Id = @Id";
@@ -60,7 +60,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, 
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, CreditoAplicado,
                                SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Ventas
                         WHERE NumeroComprobante = @NumeroComprobante";
@@ -72,7 +72,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, 
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, IdSucursal, Total, TotalPagado, CreditoAplicado,
                                SaldoPendiente, Estado, Observaciones, FechaAnulacion
                         FROM Ventas
                         WHERE SaldoPendiente > 0
@@ -87,7 +87,7 @@ namespace Comercio.Infrastructure.Repositorios
             using var connection = new SqlConnection(_connectionString);
 
             var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor,
-                       IdSucursal, Total, TotalPagado, SaldoPendiente,
+                       IdSucursal, Total, TotalPagado, CreditoAplicado, SaldoPendiente,
                        Estado, Observaciones, FechaAnulacion
                 FROM Ventas
                 WHERE IdCliente = @IdCliente";
@@ -104,7 +104,7 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, Total, TotalPagado, 
+            var sql = @"SELECT Id, NumeroComprobante, Fecha, IdCliente, IdVendedor, Total, TotalPagado, CreditoAplicado,
                         SaldoPendiente, Estado, Observaciones, FechaAnulacion
                 FROM Ventas
                 WHERE IdCliente = @IdCliente
@@ -129,9 +129,9 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"INSERT INTO Ventas (NumeroComprobante,Fecha,IdCliente,IdVendedor,IdSucursal,Total,TotalPagado,Estado,Observaciones)
+            var sql = @"INSERT INTO Ventas (NumeroComprobante,Fecha,IdCliente,IdVendedor,IdSucursal,Total,TotalPagado,CreditoAplicado,Estado,Observaciones)
                         VALUES
-                        (@NumeroComprobante,@Fecha,NULLIF(@IdCliente, 0),@IdVendedor,@IdSucursal,@Total,@TotalPagado,@Estado,@Observaciones);
+                        (@NumeroComprobante,@Fecha,NULLIF(@IdCliente, 0),@IdVendedor,@IdSucursal,@Total,@TotalPagado,@CreditoAplicado,@Estado,@Observaciones);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -153,6 +153,7 @@ namespace Comercio.Infrastructure.Repositorios
                             IdSucursal = @IdSucursal,
                             Total = @Total,
                             TotalPagado = @TotalPagado,
+                            CreditoAplicado = @CreditoAplicado,
                             Estado = @Estado,
                             Observaciones = @Observaciones
                         WHERE Id = @Id";

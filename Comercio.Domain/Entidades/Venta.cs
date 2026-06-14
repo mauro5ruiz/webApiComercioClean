@@ -12,6 +12,7 @@ namespace Comercio.Domain.Entidades
         public int IdSucursal { get; set; }
         public decimal Total { get; set; }
         public decimal TotalPagado { get; set; }
+        public decimal CreditoAplicado { get; set; }
         public decimal SaldoPendiente { get; set; }
         public string Estado { get; set; } = "Activa";
         public string? Observaciones { get; set; }
