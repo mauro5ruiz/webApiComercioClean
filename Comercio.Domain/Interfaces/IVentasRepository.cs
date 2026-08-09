@@ -14,6 +14,8 @@ namespace Comercio.Domain.Interfaces
         Task<IEnumerable<Venta>> ObtenerCuentaCorrientePorCliente(int idCliente);
         Task<int> Insertar(Venta venta);
         Task Actualizar(Venta venta);
+        Task AgregarCreditoAplicado(int idVenta, decimal importe);
+        Task RegistrarDevolucion(int idVenta, decimal montoTotal, decimal montoTotalPagado, decimal montoCreditoAplicado);
         Task CambiarEstado(int idVenta, string estado);
     }
 }

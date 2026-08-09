@@ -20,10 +20,15 @@ namespace Comercio.Infrastructure.Repositorios
 
             var sql = @"SELECT Id, IdCompra, IdProveedor, Fecha, Motivo, Total, Estado
                         FROM DevolucionCompra
-                        WHERE Fecha BETWEEN @Desde AND @Hasta
+                        WHERE Fecha >= @Desde
+                          AND Fecha < @Hasta
                         ORDER BY Fecha DESC;";
 
-            return await connection.QueryAsync<DevolucionCompra>(sql, new { Desde = desde, Hasta = hasta });
+            return await connection.QueryAsync<DevolucionCompra>(sql, new
+            {
+                Desde = desde.Date,
+                Hasta = hasta.Date.AddDays(1)
+            });
         }
 
         public async Task<DevolucionCompra?> ObtenerPorId(int idDevolucion)

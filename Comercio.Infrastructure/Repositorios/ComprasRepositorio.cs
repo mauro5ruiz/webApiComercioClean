@@ -132,6 +132,42 @@ namespace Comercio.Infrastructure.Repositorios
             });
         }
 
+        public async Task AgregarCreditoAplicado(int idCompra, decimal importe)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Compras
+                        SET CreditoAplicado = CreditoAplicado + @Importe,
+                            SaldoPendiente = Total - TotalPagado - (CreditoAplicado + @Importe)
+                        WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = idCompra,
+                Importe = importe
+            });
+        }
+
+        public async Task RegistrarDevolucion(int idCompra, decimal montoTotal, decimal montoTotalPagado, decimal montoCreditoAplicado)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Compras
+                        SET Total = Total - @MontoTotal,
+                            TotalPagado = TotalPagado - @MontoTotalPagado,
+                            CreditoAplicado = CreditoAplicado - @MontoCreditoAplicado,
+                            SaldoPendiente = (Total - @MontoTotal) - (TotalPagado - @MontoTotalPagado) - (CreditoAplicado - @MontoCreditoAplicado)
+                        WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = idCompra,
+                MontoTotal = montoTotal,
+                MontoTotalPagado = montoTotalPagado,
+                MontoCreditoAplicado = montoCreditoAplicado
+            });
+        }
+
         public async Task<IEnumerable<Compra>> ObtenerPendientesPorProveedor(int idProveedor)
         {
             using var connection = new SqlConnection(_connectionString);

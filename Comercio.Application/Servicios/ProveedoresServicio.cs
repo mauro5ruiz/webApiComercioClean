@@ -343,9 +343,11 @@ namespace Comercio.Application.Servicios
                     if (!creditoConsumido)
                         throw new InvalidOperationException("No se pudo aplicar el saldo a favor del proveedor. Verifique el credito disponible.");
 
+                    credito.Saldo -= montoCredito;
                     saldoCompra -= montoCredito;
+                    compra.CreditoAplicado += montoCredito;
 
-                    await _pagosRepository.RecalcularTotalPagado(compra.Id);
+                    await _comprasRepository.AgregarCreditoAplicado(compra.Id, montoCredito);
                 }
 
                 // 3️⃣ si aún queda saldo, usar dinero

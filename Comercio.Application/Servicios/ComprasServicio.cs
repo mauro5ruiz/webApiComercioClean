@@ -16,10 +16,12 @@ namespace Comercio.Application.Servicios
         private readonly IProductosRepository _productosRepository;
         private readonly IMovimientosStockRepository _movimientosStockRepository;
         private readonly ICreditoProveedorRepository _creditoProveedorRepository;
+        private readonly ISucursalesRepository _sucursalesRepository;
 
         public ComprasServicio(IComprasRepostory comprasRepository,IDetalleComprasRepository detalleRepository,IComprasPagosRepository pagosRepository,
             IDevolucionComprasRepository devolucionesRepository, IDevolucionCompraDetalleRepository devolucionDetalleRepository,
-            IProductosRepository productosRepository,IMovimientosStockRepository movimientosStockRepository, ICreditoProveedorRepository creditoProveedorRepository)
+            IProductosRepository productosRepository,IMovimientosStockRepository movimientosStockRepository, ICreditoProveedorRepository creditoProveedorRepository,
+            ISucursalesRepository sucursalesRepository)
         {
             _comprasRepository = comprasRepository;
             _detalleRepository = detalleRepository;
@@ -29,6 +31,7 @@ namespace Comercio.Application.Servicios
             _productosRepository = productosRepository;
             _movimientosStockRepository = movimientosStockRepository;
             _creditoProveedorRepository = creditoProveedorRepository;
+            _sucursalesRepository = sucursalesRepository;
         }
 
         public async Task<IEnumerable<Compra>> ObtenerEntreFechas(DateTime desde, DateTime hasta)
@@ -77,6 +80,8 @@ namespace Comercio.Application.Servicios
             var totalCalculado = detallesList.Sum(d => d.Cantidad * d.PrecioUnitario);
             var creditoAplicado = compra.CreditoAplicado;
             var totalPagos = pagosList.Sum(p => p.Importe);
+
+            compra.IdSucursal = await ResolverSucursal(compra.IdSucursal);
 
             if (creditoAplicado < 0)
                 throw new ArgumentException("El credito aplicado no puede ser menor a cero.");
@@ -200,6 +205,8 @@ namespace Comercio.Application.Servicios
                 .Where(p => p.Estado == EstadoComprobante.Activa)
                 .ToList();
 
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
             if (pagosActivos.Any() || compra.CreditoAplicado > 0)
                 await RegistrarDevolucionAutomaticaPorAnulacion(compra, detalles, pagosActivos);
 
@@ -218,7 +225,12 @@ namespace Comercio.Application.Servicios
                 await _movimientosStockRepository.RegistrarMovimiento(movimientoReverso);
             }
 
+            foreach (var pago in pagosActivos)
+                await _pagosRepository.CambiarEstado(pago.Id, (int)EstadoComprobante.Anulada);
+
             await _comprasRepository.CambiarEstado(idCompra, 2);
+
+            scope.Complete();
         }
 
         private async Task RegistrarDevolucionAutomaticaPorAnulacion(Compra compra, IEnumerable<DetalleCompra> detalles, IEnumerable<CompraPago> pagosActivos)
@@ -297,6 +309,34 @@ namespace Comercio.Application.Servicios
                 await _pagosRepository.Insertar(pago);
                 await _pagosRepository.RecalcularTotalPagado(compra.Id);
             }
+        }
+
+        private async Task<int> ResolverSucursal(int idSucursal)
+        {
+            if (idSucursal > 0)
+            {
+                var sucursalSeleccionada = await _sucursalesRepository.ObtenerPorId(idSucursal);
+
+                if (sucursalSeleccionada is null)
+                    throw new InvalidOperationException("La sucursal seleccionada no existe.");
+
+                if (!sucursalSeleccionada.Activa)
+                    throw new InvalidOperationException("La sucursal seleccionada esta inactiva.");
+
+                return sucursalSeleccionada.Id;
+            }
+
+            var sucursalesActivas = (await _sucursalesRepository.ObtenerTodas())
+                .Where(s => s.Activa)
+                .ToList();
+
+            if (sucursalesActivas.Count == 1)
+                return sucursalesActivas[0].Id;
+
+            if (!sucursalesActivas.Any())
+                throw new InvalidOperationException("No hay sucursales activas configuradas.");
+
+            throw new InvalidOperationException("Debe seleccionar una sucursal valida.");
         }
     }
 }

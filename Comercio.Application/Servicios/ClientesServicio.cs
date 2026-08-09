@@ -433,8 +433,9 @@ namespace Comercio.Application.Servicios
 
                     credito.Saldo -= montoCredito;
                     saldoVenta -= montoCredito;
+                    venta.CreditoAplicado += montoCredito;
 
-                    await _ventasPagosRepository.RecalcularTotalPagado(venta.Id);
+                    await _ventasRepository.AgregarCreditoAplicado(venta.Id, montoCredito);
                 }
 
                 if (saldoVenta > 0 && restante > 0)

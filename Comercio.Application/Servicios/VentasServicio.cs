@@ -24,6 +24,7 @@ namespace Comercio.Application.Servicios
         private readonly IMovimientosStockRepository _movimientosStockRepository;
         private readonly ICreditoClienteRepository _creditoClienteRepository;
         private readonly INotasCreditoRepository _notasCreditoRepository;
+        private readonly ISucursalesRepository _sucursalesRepository;
 
         public VentasServicio(
             IVentasRepository ventasRepository,
@@ -35,7 +36,8 @@ namespace Comercio.Application.Servicios
             IProductosRepository productosRepository,
             IMovimientosStockRepository movimientosStockRepository,
             ICreditoClienteRepository creditoClienteRepository,
-            INotasCreditoRepository notasCreditoRepository)
+            INotasCreditoRepository notasCreditoRepository,
+            ISucursalesRepository sucursalesRepository)
         {
             _ventasRepository = ventasRepository;
             _detalleRepository = detalleRepository;
@@ -47,6 +49,7 @@ namespace Comercio.Application.Servicios
             _movimientosStockRepository = movimientosStockRepository;
             _creditoClienteRepository = creditoClienteRepository;
             _notasCreditoRepository = notasCreditoRepository;
+            _sucursalesRepository = sucursalesRepository;
         }
 
         public async Task<IEnumerable<Venta>> ObtenerEntreFechas(DateTime desde, DateTime hasta)
@@ -94,6 +97,8 @@ namespace Comercio.Application.Servicios
 
             var pagosList = pagos?.ToList() ?? new List<VentaPago>();
             var erroresStock = new List<string>();
+
+            venta.IdSucursal = await ResolverSucursal(venta.IdSucursal);
 
             foreach (var detalle in detallesList)
             {
@@ -400,6 +405,10 @@ namespace Comercio.Application.Servicios
                 throw new InvalidOperationException("El cliente no tiene ventas pendientes.");
 
             decimal montoRestante = importe;
+            var creditos = (await _creditoClienteRepository.ObtenerPorCliente(idCliente))
+                .Where(c => c.Saldo > 0)
+                .OrderBy(c => c.Fecha)
+                .ToList();
 
             foreach (var venta in ventasPendientes.OrderBy(v => v.Fecha))
             {
@@ -407,6 +416,31 @@ namespace Comercio.Application.Servicios
                     break;
 
                 var saldo = venta.SaldoPendiente;
+
+                foreach (var credito in creditos)
+                {
+                    if (saldo <= 0)
+                        break;
+
+                    if (credito.Saldo <= 0)
+                        continue;
+
+                    var montoCredito = Math.Min(saldo, credito.Saldo);
+                    var creditoConsumido = await _creditoClienteRepository.ConsumirCredito(credito.Id, montoCredito);
+
+                    if (!creditoConsumido)
+                        throw new InvalidOperationException("No se pudo aplicar el saldo a favor del cliente. Verifique el credito disponible.");
+
+                    credito.Saldo -= montoCredito;
+                    saldo -= montoCredito;
+                    venta.CreditoAplicado += montoCredito;
+
+                    await _ventasRepository.AgregarCreditoAplicado(venta.Id, montoCredito);
+                }
+
+                if (saldo <= 0)
+                    continue;
+
                 var montoAplicar = Math.Min(saldo, montoRestante);
 
                 await _pagosRepository.Insertar(new VentaPago
@@ -422,6 +456,34 @@ namespace Comercio.Application.Servicios
                 await _pagosRepository.RecalcularTotalPagado(venta.Id);
                 montoRestante -= montoAplicar;
             }
+        }
+
+        private async Task<int> ResolverSucursal(int idSucursal)
+        {
+            if (idSucursal > 0)
+            {
+                var sucursalSeleccionada = await _sucursalesRepository.ObtenerPorId(idSucursal);
+
+                if (sucursalSeleccionada is null)
+                    throw new InvalidOperationException("La sucursal seleccionada no existe.");
+
+                if (!sucursalSeleccionada.Activa)
+                    throw new InvalidOperationException("La sucursal seleccionada esta inactiva.");
+
+                return sucursalSeleccionada.Id;
+            }
+
+            var sucursalesActivas = (await _sucursalesRepository.ObtenerTodas())
+                .Where(s => s.Activa)
+                .ToList();
+
+            if (sucursalesActivas.Count == 1)
+                return sucursalesActivas[0].Id;
+
+            if (!sucursalesActivas.Any())
+                throw new InvalidOperationException("No hay sucursales activas configuradas.");
+
+            throw new InvalidOperationException("Debe seleccionar una sucursal valida.");
         }
 
         private static bool EsConsumidorFinal(int idCliente) => idCliente <= 0;

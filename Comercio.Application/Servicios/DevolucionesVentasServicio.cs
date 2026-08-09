@@ -67,6 +67,7 @@ namespace Comercio.Application.Servicios
             var detallesVenta = (await _detalleVentasRepository.ObtenerPorVenta(venta.Id)).ToList();
 
             decimal totalDevuelto = 0;
+            var cantidadDisponiblePorProducto = detallesVenta.ToDictionary(d => d.IdProducto, d => d.Cantidad);
 
             foreach (var detalle in detallesList)
             {
@@ -78,8 +79,12 @@ namespace Comercio.Application.Servicios
                 if (detalle.Cantidad <= 0)
                     throw new InvalidOperationException("La cantidad a devolver debe ser mayor a cero.");
 
-                if (detalle.Cantidad > detalleVenta.Cantidad)
+                var disponible = cantidadDisponiblePorProducto[detalle.IdProducto];
+
+                if (detalle.Cantidad > disponible)
                     throw new InvalidOperationException("No se puede devolver mas cantidad de la vendida.");
+
+                cantidadDisponiblePorProducto[detalle.IdProducto] = disponible - detalle.Cantidad;
 
                 detalle.PrecioUnitario = detalleVenta.PrecioUnitario;
                 detalle.Subtotal = detalle.Cantidad * detalle.PrecioUnitario;
@@ -89,6 +94,35 @@ namespace Comercio.Application.Servicios
             devolucion.Total = totalDevuelto;
             devolucion.Fecha = DateTime.Now;
             devolucion.Estado = EstadoActiva;
+
+            var pagosDevolucion = pagos?.ToList() ?? new List<DevolucionVentaPago>();
+            var totalCobradoVenta = venta.TotalPagado;
+            var totalCanceladoVenta = venta.TotalPagado + venta.CreditoAplicado;
+            var totalPagadoEnDevolucion = 0m;
+
+            if (totalCobradoVenta <= 0)
+            {
+                if (pagosDevolucion.Any())
+                    throw new InvalidOperationException("No se pueden registrar pagos de devolucion si la venta no tiene pagos cobrados.");
+            }
+            else
+            {
+                foreach (var pago in pagosDevolucion)
+                {
+                    if (pago.IdFormaPago <= 0)
+                        throw new InvalidOperationException("La forma de pago de la devolucion es obligatoria.");
+
+                    if (pago.Importe <= 0)
+                        throw new InvalidOperationException("Los pagos de la devolucion deben ser mayores a cero.");
+
+                    totalPagadoEnDevolucion += pago.Importe;
+                }
+            }
+
+            var maximoRefundableEnPagos = Math.Min(totalDevuelto, totalCobradoVenta);
+
+            if (totalPagadoEnDevolucion > maximoRefundableEnPagos)
+                throw new InvalidOperationException("Los pagos de la devolucion no pueden superar lo efectivamente cobrado ni el total devuelto.");
 
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
@@ -119,44 +153,24 @@ namespace Comercio.Application.Servicios
                     await _detalleVentasRepository.AgregarCantidadDevuelto(idDetalleVenta.Value, detalle.IdProducto, detalle.Cantidad);
             }
 
-            var pagosDevolucion = pagos?.ToList() ?? new List<DevolucionVentaPago>();
-            var totalCobradoVenta = venta.TotalPagado;
-            var totalCanceladoVenta = venta.TotalPagado + venta.CreditoAplicado;
-            var totalPagadoEnDevolucion = 0m;
-
-            if (totalCobradoVenta <= 0)
+            foreach (var pago in pagosDevolucion)
             {
-                if (pagosDevolucion.Any())
-                    throw new InvalidOperationException("No se pueden registrar pagos de devolucion si la venta no tiene pagos cobrados.");
+                pago.IdDevolucionVenta = idDevolucion;
+                pago.FechaPago = DateTime.Now;
+                pago.Estado = EstadoPagoActivo;
+
+                await _pagosRepository.Insertar(pago);
             }
-            else
-            {
-                foreach (var pago in pagosDevolucion)
-                {
-                    if (pago.IdFormaPago <= 0)
-                        throw new InvalidOperationException("La forma de pago de la devolucion es obligatoria.");
-
-                    if (pago.Importe <= 0)
-                        throw new InvalidOperationException("Los pagos de la devolucion deben ser mayores a cero.");
-
-                    pago.IdDevolucionVenta = idDevolucion;
-                    pago.FechaPago = DateTime.Now;
-                    pago.Estado = EstadoPagoActivo;
-
-                    await _pagosRepository.Insertar(pago);
-                    totalPagadoEnDevolucion += pago.Importe;
-                }
-            }
-
-            var maximoRefundableEnPagos = Math.Min(totalDevuelto, totalCobradoVenta);
-
-            if (totalPagadoEnDevolucion > maximoRefundableEnPagos)
-                throw new InvalidOperationException("Los pagos de la devolucion no pueden superar lo efectivamente cobrado ni el total devuelto.");
 
             var saldoCreditoONota = Math.Min(totalDevuelto, totalCanceladoVenta) - totalPagadoEnDevolucion;
 
             if (saldoCreditoONota > 0)
                 await GenerarCreditoONotaCredito(devolucion.IdCliente, idDevolucion, saldoCreditoONota);
+
+            var reducirTotalPagado = maximoRefundableEnPagos;
+            var reducirCreditoAplicado = Math.Min(totalDevuelto, totalCanceladoVenta) - reducirTotalPagado;
+
+            await _ventasRepository.RegistrarDevolucion(venta.Id, totalDevuelto, reducirTotalPagado, reducirCreditoAplicado);
 
             scope.Complete();
             return idDevolucion;

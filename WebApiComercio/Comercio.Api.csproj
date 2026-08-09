@@ -20,4 +20,11 @@
     <Folder Include="wwwroot\images\marcas\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Comercio.Application.Tests\**" />
+    <Content Remove="Comercio.Application.Tests\**" />
+    <EmbeddedResource Remove="Comercio.Application.Tests\**" />
+    <None Remove="Comercio.Application.Tests\**" />
+  </ItemGroup>
+
 </Project>

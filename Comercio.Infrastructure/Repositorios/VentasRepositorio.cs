@@ -129,9 +129,9 @@ namespace Comercio.Infrastructure.Repositorios
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var sql = @"INSERT INTO Ventas (NumeroComprobante,Fecha,IdCliente,IdVendedor,IdSucursal,Total,TotalPagado,CreditoAplicado,Estado,Observaciones)
+            var sql = @"INSERT INTO Ventas (NumeroComprobante,Fecha,IdCliente,IdVendedor,Total,TotalPagado,CreditoAplicado,Estado,Observaciones,IdSucursal)
                         VALUES
-                        (@NumeroComprobante,@Fecha,NULLIF(@IdCliente, 0),@IdVendedor,@IdSucursal,@Total,@TotalPagado,@CreditoAplicado,@Estado,@Observaciones);
+                        (@NumeroComprobante,@Fecha,NULLIF(@IdCliente, 0),@IdVendedor,@Total,@TotalPagado,@CreditoAplicado,@Estado,@Observaciones,@IdSucursal);
 
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -150,7 +150,6 @@ namespace Comercio.Infrastructure.Repositorios
                         SET NumeroComprobante = @NumeroComprobante,
                             IdCliente = @IdCliente,
                             IdVendedor = @IdVendedor,
-                            IdSucursal = @IdSucursal,
                             Total = @Total,
                             TotalPagado = @TotalPagado,
                             CreditoAplicado = @CreditoAplicado,
@@ -159,6 +158,40 @@ namespace Comercio.Infrastructure.Repositorios
                         WHERE Id = @Id";
 
             await connection.ExecuteAsync(sql, venta);
+        }
+
+        public async Task AgregarCreditoAplicado(int idVenta, decimal importe)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Ventas
+                        SET CreditoAplicado = CreditoAplicado + @Importe
+                        WHERE Id = @Id";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = idVenta,
+                Importe = importe
+            });
+        }
+
+        public async Task RegistrarDevolucion(int idVenta, decimal montoTotal, decimal montoTotalPagado, decimal montoCreditoAplicado)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"UPDATE Ventas
+                        SET Total = Total - @MontoTotal,
+                            TotalPagado = TotalPagado - @MontoTotalPagado,
+                            CreditoAplicado = CreditoAplicado - @MontoCreditoAplicado
+                        WHERE Id = @Id;";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = idVenta,
+                MontoTotal = montoTotal,
+                MontoTotalPagado = montoTotalPagado,
+                MontoCreditoAplicado = montoCreditoAplicado
+            });
         }
 
         public async Task CambiarEstado(int idVenta, string estado)
